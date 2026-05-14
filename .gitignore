@@ -15,19 +15,11 @@ pnpm-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
-
-# build
-/dist
-/build
-/.next
-
-# vite
-vite.svg
-
-# coverage
-coverage/
+apps/backend/.env
+apps/frontend/.env
 
 # docker
+docker-compose.yml
 postgres_data/
 redis_data/
 
