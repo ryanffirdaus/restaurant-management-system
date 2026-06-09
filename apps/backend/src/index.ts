@@ -1,26 +1,27 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import type { Request, Response } from 'express';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT: number = parseInt(process.env.PORT || '4000', 10);
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.get('/api/health', (req, res) => {
+app.get('/api/health', (_req: Request, res: Response) => {
   res.json({ status: 'Backend API is running', timestamp: new Date() });
 });
 
-app.get('/', (req, res) => {
+app.get('/', (_req: Request, res: Response) => {
   res.json({ message: 'Restaurant Management System Backend', version: '1.0.0' });
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`✅ Backend server running on port ${PORT}`);
   console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);

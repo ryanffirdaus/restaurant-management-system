@@ -1,9 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.SUPABASE_URL
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+function getEnv(key: string): string {
+  const value = process.env[key]
+  if (!value) throw new Error(`Missing environment variable: ${key}`)
+  return value
+}
 
-if (!supabaseUrl) throw new Error('Missing environment variable: SUPABASE_URL')
-if (!supabaseServiceKey) throw new Error('Missing environment variable: SUPABASE_SERVICE_ROLE_KEY')
+const supabaseUrl = getEnv('SUPABASE_URL')
+const supabaseServiceKey = getEnv('SUPABASE_SERVICE_ROLE_KEY')
 
-export const supabase = createClient(supabaseUrl, supabaseServiceKey)
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseServiceKey)
