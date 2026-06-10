@@ -127,15 +127,13 @@ Go to https://app.supabase.com:
 CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
-  restaurant_id UUID NOT NULL,
   status TEXT DEFAULT 'pending',
   total_price DECIMAL(10, 2),
   items JSONB DEFAULT '[]'::jsonb,
   notes TEXT,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW(),
-  FOREIGN KEY (user_id) REFERENCES auth.users(id),
-  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
+  FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 
 CREATE TABLE order_items (
@@ -205,12 +203,11 @@ export async function getOrderById(id) {
 }
 
 // Create order
-export async function createOrder(userId, restaurantId, items) {
+export async function createOrder(userId, items) {
   const { data, error } = await supabase
     .from('orders')
     .insert([{
       user_id: userId,
-      restaurant_id: restaurantId,
       items: items
     }])
     .select()
@@ -274,14 +271,14 @@ router.get('/:id', async (req, res) => {
 // POST /api/orders
 router.post('/', async (req, res) => {
   try {
-    const { userId, restaurantId, items } = req.body
+    const { userId, items } = req.body
     
     // Validation
-    if (!userId || !restaurantId || !items) {
+    if (!userId || !items) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
     
-    const order = await createOrder(userId, restaurantId, items)
+    const order = await createOrder(userId, items)
     res.status(201).json(order)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -348,7 +345,6 @@ curl -X POST http://localhost:4000/api/orders \
   -H "Content-Type: application/json" \
   -d '{
     "userId": "user-uuid-123",
-    "restaurantId": "restaurant-uuid-456",
     "items": [
       {"menuItemId": "item-1", "quantity": 2},
       {"menuItemId": "item-2", "quantity": 1}
@@ -534,15 +530,13 @@ Example: Add a **Menu Items** management feature
 ```sql
 CREATE TABLE menu_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  restaurant_id UUID NOT NULL,
   name TEXT NOT NULL,
   description TEXT,
   price DECIMAL(10, 2) NOT NULL,
   category TEXT,
   available BOOLEAN DEFAULT true,
   image_url TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
-  FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
+  created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -551,11 +545,10 @@ CREATE TABLE menu_items (
 **File: `apps/backend/src/lib/database.js`**
 
 ```javascript
-export async function getMenuItems(restaurantId) {
+export async function getMenuItems() {
   const { data, error } = await supabase
     .from('menu_items')
     .select('*')
-    .eq('restaurant_id', restaurantId)
     .eq('available', true)
   
   if (error) throw error
@@ -573,10 +566,10 @@ export async function getMenuItem(id) {
   return data
 }
 
-export async function createMenuItem(restaurantId, item) {
+export async function createMenuItem(item) {
   const { data, error } = await supabase
     .from('menu_items')
-    .insert([{ restaurant_id: restaurantId, ...item }])
+    .insert([item])
     .select()
   
   if (error) throw error
@@ -620,20 +613,20 @@ import {
 
 const router = express.Router()
 
-// GET /api/menu/:restaurantId
-router.get('/:restaurantId', async (req, res) => {
+// GET /api/menu
+router.get('/', async (req, res) => {
   try {
-    const items = await getMenuItems(req.params.restaurantId)
+    const items = await getMenuItems()
     res.json(items)
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
 })
 
-// POST /api/menu/:restaurantId
-router.post('/:restaurantId', async (req, res) => {
+// POST /api/menu
+router.post('/', async (req, res) => {
   try {
-    const item = await createMenuItem(req.params.restaurantId, req.body)
+    const item = await createMenuItem(req.body)
     res.status(201).json(item)
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -680,7 +673,7 @@ app.use('/api/menu', menuRoutes)
 ```javascript
 import { useState, useEffect } from 'react'
 
-export default function MenuManager({ restaurantId }) {
+export default function MenuManager() {
   const [items, setItems] = useState([])
   const [newItem, setNewItem] = useState({
     name: '',
@@ -691,11 +684,11 @@ export default function MenuManager({ restaurantId }) {
 
   useEffect(() => {
     fetchMenuItems()
-  }, [restaurantId])
+  }, [])
 
   const fetchMenuItems = async () => {
     try {
-      const response = await fetch(`/api/menu/${restaurantId}`)
+      const response = await fetch('/api/menu')
       const data = await response.json()
       setItems(data)
     } catch (error) {
@@ -706,7 +699,7 @@ export default function MenuManager({ restaurantId }) {
   const handleAddItem = async (e) => {
     e.preventDefault()
     try {
-      const response = await fetch(`/api/menu/${restaurantId}`, {
+      const response = await fetch('/api/menu', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newItem)
@@ -800,10 +793,10 @@ export default function MenuManager({ restaurantId }) {
 curl http://localhost:4000/api/health
 
 # Get menu items
-curl http://localhost:4000/api/menu/restaurant-uuid
+curl http://localhost:4000/api/menu
 
 # Create menu item
-curl -X POST http://localhost:4000/api/menu/restaurant-uuid \
+curl -X POST http://localhost:4000/api/menu \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Burger",
