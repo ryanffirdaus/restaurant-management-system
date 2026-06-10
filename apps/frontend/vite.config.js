@@ -5,10 +5,16 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    host: true
+    host: true,
+    watch: {
+      usePolling: true,
+    },
+    hmr: {
+      overlay: true,
+    },
   },
   build: {
     outDir: 'dist',
-    sourcemap: false
-  }
+    sourcemap: false,
+  },
 })

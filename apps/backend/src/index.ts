@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import type { Request, Response } from 'express';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT: number = parseInt(process.env.PORT || '4000', 10);

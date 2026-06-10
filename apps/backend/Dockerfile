@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 4000
 
-CMD ["npm", "run", "dev"]
+CMD ["sh", "-c", "npm install --prefer-offline && npm run dev"]
