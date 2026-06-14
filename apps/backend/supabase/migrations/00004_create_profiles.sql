@@ -40,7 +40,7 @@ CREATE POLICY "profiles_select_own"
 
 CREATE POLICY "profiles_select_admin"
   ON profiles FOR SELECT
-  USING (auth.is_admin());
+  USING (is_admin());
 
 CREATE POLICY "profiles_update_own"
   ON profiles FOR UPDATE
@@ -49,9 +49,9 @@ CREATE POLICY "profiles_update_own"
 
 CREATE POLICY "profiles_insert_admin"
   ON profiles FOR INSERT
-  WITH CHECK (auth.is_admin());
+  WITH CHECK (is_admin());
 
 CREATE POLICY "profiles_update_admin"
   ON profiles FOR UPDATE
-  USING (auth.is_admin())
-  WITH CHECK (auth.is_admin());
+  USING (is_admin())
+  WITH CHECK (is_admin());

@@ -30,9 +30,9 @@ CREATE POLICY "menu_items_select_all"
 
 CREATE POLICY "menu_items_insert_admin"
   ON menu_items FOR INSERT
-  WITH CHECK (auth.is_admin());
+  WITH CHECK (is_admin());
 
 CREATE POLICY "menu_items_update_admin"
   ON menu_items FOR UPDATE
-  USING (auth.is_admin())
-  WITH CHECK (auth.is_admin());
+  USING (is_admin())
+  WITH CHECK (is_admin());

@@ -45,7 +45,7 @@ ALTER TABLE employees ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "employees_select_admin"
   ON employees FOR SELECT
-  USING (auth.is_admin());
+  USING (is_admin());
 
 CREATE POLICY "employees_select_own"
   ON employees FOR SELECT
@@ -53,9 +53,9 @@ CREATE POLICY "employees_select_own"
 
 CREATE POLICY "employees_insert_admin"
   ON employees FOR INSERT
-  WITH CHECK (auth.is_admin());
+  WITH CHECK (is_admin());
 
 CREATE POLICY "employees_update_admin"
   ON employees FOR UPDATE
-  USING (auth.is_admin())
-  WITH CHECK (auth.is_admin());
+  USING (is_admin())
+  WITH CHECK (is_admin());

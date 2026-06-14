@@ -29,12 +29,12 @@ CREATE POLICY "tables_select_all"
 
 CREATE POLICY "tables_insert_admin"
   ON restaurant_tables FOR INSERT
-  WITH CHECK (auth.is_admin());
+  WITH CHECK (is_admin());
 
 CREATE POLICY "tables_update_admin"
   ON restaurant_tables FOR UPDATE
-  USING (auth.is_admin())
-  WITH CHECK (auth.is_admin());
+  USING (is_admin())
+  WITH CHECK (is_admin());
 
 CREATE POLICY "tables_update_staff"
   ON restaurant_tables FOR UPDATE
