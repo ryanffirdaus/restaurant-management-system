@@ -1,7 +1,8 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import './styles/global.css'
 import LoginPage from './pages/LoginPage'
+import EmployeesPage from './pages/EmployeesPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import Dashboard from './components/Dashboard'
@@ -46,9 +47,14 @@ function DashboardLayout() {
         userRole={role}
         userInitial={initial}
       />
-      <Dashboard sidebarOpen={sidebarOpen} onToggleSidebar={toggleSidebar} />
+      <Outlet context={{ sidebarOpen, toggleSidebar } as LayoutContext} />
     </>
   )
+}
+
+interface LayoutContext {
+  sidebarOpen: boolean
+  toggleSidebar: () => void
 }
 
 function App() {
@@ -65,7 +71,10 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>} />
+      <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+        <Route index element={<Dashboard />} />
+        <Route path="employees" element={<EmployeesPage />} />
+      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
