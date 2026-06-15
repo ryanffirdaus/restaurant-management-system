@@ -7,11 +7,11 @@ CREATE TABLE menu_items (
   available BOOLEAN DEFAULT true,
   image_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users(id),
+  created_by UUID,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_by UUID REFERENCES auth.users(id),
+  updated_by UUID,
   deleted_at TIMESTAMPTZ,
-  deleted_by UUID REFERENCES auth.users(id)
+  deleted_by UUID
 );
 
 CREATE INDEX idx_menu_items_category ON menu_items(category);

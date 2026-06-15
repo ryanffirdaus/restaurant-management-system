@@ -4,11 +4,11 @@ CREATE TABLE profiles (
   phone TEXT,
   avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users(id),
+  created_by UUID,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_by UUID REFERENCES auth.users(id),
+  updated_by UUID,
   deleted_at TIMESTAMPTZ,
-  deleted_by UUID REFERENCES auth.users(id)
+  deleted_by UUID
 );
 
 CREATE TRIGGER trg_profiles_audit
@@ -19,10 +19,13 @@ CREATE TRIGGER trg_profiles_audit
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
+SECURITY DEFINER
 AS $$
 BEGIN
-  INSERT INTO profiles (id, name)
+  INSERT INTO public.profiles (id, name)
   VALUES (NEW.id, COALESCE(NEW.raw_user_meta_data ->> 'name', 'User'));
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
   RETURN NEW;
 END;
 $$;

@@ -8,10 +8,10 @@ CREATE TABLE restaurant_tables (
   notes TEXT,
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users(id),
+  created_by UUID,
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_by UUID REFERENCES auth.users(id),
-  deleted_by UUID REFERENCES auth.users(id)
+  updated_by UUID,
+  deleted_by UUID
 );
 
 CREATE INDEX idx_tables_status ON restaurant_tables(status);
