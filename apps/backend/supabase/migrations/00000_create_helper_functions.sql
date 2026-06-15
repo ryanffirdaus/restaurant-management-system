@@ -3,7 +3,7 @@ RETURNS BOOLEAN
 LANGUAGE sql
 STABLE
 AS $$
-  SELECT COALESCE(current_setting('request.jwt.claims', true)::json ->> 'role', '') = 'admin';
+  SELECT COALESCE(auth.jwt() -> 'user_metadata' ->> 'role', '') = 'admin';
 $$;
 
 CREATE OR REPLACE FUNCTION set_audit_fields()
