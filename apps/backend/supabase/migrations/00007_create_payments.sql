@@ -9,7 +9,7 @@ CREATE TABLE payments (
   cashier_id UUID NOT NULL REFERENCES auth.users(id),
   paid_at TIMESTAMPTZ DEFAULT NOW(),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  created_by UUID
+  created_by UUID REFERENCES auth.users(id)
 );
 
 CREATE INDEX idx_payments_order_id ON payments(order_id);

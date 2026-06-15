@@ -8,11 +8,11 @@ CREATE TABLE employees (
   hire_date DATE DEFAULT CURRENT_DATE,
   active BOOLEAN DEFAULT true,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  created_by UUID,
+  created_by UUID REFERENCES auth.users(id),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_by UUID,
+  updated_by UUID REFERENCES auth.users(id),
   deleted_at TIMESTAMPTZ,
-  deleted_by UUID
+  deleted_by UUID REFERENCES auth.users(id)
 );
 
 CREATE INDEX idx_employees_role ON employees(role);
