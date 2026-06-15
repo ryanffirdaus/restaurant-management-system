@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import type { Request, Response } from 'express'
-import { stripe, STRIPE_WEBHOOK_SECRET } from '../config/stripe.js'
+import { getStripe, getWebhookSecret } from '../config/stripe.js'
 import { supabase } from '../config/supabase.js'
 import type { AuthenticatedRequest } from '../types/auth.js'
 import { requireAuth } from '../middleware/auth.js'
@@ -33,6 +33,7 @@ router.post('/create-intent', requireAuth, asyncHandler(async (req: Authenticate
 
   const amountInCents = Math.round(Number(order.total_price) * 100)
 
+  const stripe = getStripe()
   const paymentIntent = await stripe.paymentIntents.create({
     amount: amountInCents,
     currency: 'idr',
@@ -66,7 +67,8 @@ export async function stripeWebhook(req: Request, res: Response) {
 
   let event
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET)
+    const stripe = getStripe()
+    event = stripe.webhooks.constructEvent(req.body, sig, getWebhookSecret())
   } catch {
     return res.status(400).json({ error: 'Invalid signature' })
   }

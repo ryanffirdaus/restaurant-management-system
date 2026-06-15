@@ -1,8 +1,23 @@
 import Stripe from 'stripe'
 import { getEnv } from './env.js'
 
-export const stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
-  typescript: true,
-})
+let _stripe: Stripe | null = null
+let _webhookSecret: string | null = null
 
-export const STRIPE_WEBHOOK_SECRET = getEnv('STRIPE_WEBHOOK_SECRET')
+function initStripe() {
+  if (!_stripe) {
+    _stripe = new Stripe(getEnv('STRIPE_SECRET_KEY'), {
+      typescript: true,
+    })
+    _webhookSecret = getEnv('STRIPE_WEBHOOK_SECRET')
+  }
+  return { stripe: _stripe, webhookSecret: _webhookSecret }
+}
+
+export function getStripe(): Stripe {
+  return initStripe().stripe
+}
+
+export function getWebhookSecret(): string {
+  return initStripe().webhookSecret!
+}
