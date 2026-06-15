@@ -11,6 +11,7 @@ import tableRoutes from './routes/tables.js';
 import employeeRoutes from './routes/employees.js';
 import profileRoutes from './routes/profiles.js';
 import paymentRoutes from './routes/payments.js';
+import authRoutes from './routes/auth.js';
 import stripeRoutes, { stripeWebhook } from './routes/stripe.js';
 import { errorHandler } from './middleware/error-handler.js';
 
@@ -32,9 +33,10 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 app.get('/', (_req: Request, res: Response) => {
-  res.json({ message: 'Restaurant Management System Backend', version: '1.0.0' });
+  res.json({ message: 'Servio Backend', version: '1.0.0' });
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/tables', tableRoutes);

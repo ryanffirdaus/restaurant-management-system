@@ -1,5 +1,5 @@
 ---
-name: OmniTable Management
+name: Servio
 colors:
   surface: '#FFFFFF'
   surface-dim: '#d8dadc'
