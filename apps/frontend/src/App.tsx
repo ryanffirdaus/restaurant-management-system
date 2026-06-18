@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage'
 import EmployeesPage from './pages/EmployeesPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
+import TopAppBar from './components/TopAppBar'
 import Dashboard from './components/Dashboard'
 import { useAuth } from './context/AuthContext'
 
@@ -19,6 +20,11 @@ function useMediaQuery(query: string): boolean {
   }, [query])
 
   return matches
+}
+
+export interface LayoutContext {
+  sidebarOpen: boolean
+  toggleSidebar: () => void
 }
 
 function DashboardLayout() {
@@ -47,14 +53,12 @@ function DashboardLayout() {
         userRole={role}
         userInitial={initial}
       />
-      <Outlet context={{ sidebarOpen, toggleSidebar } as LayoutContext} />
+      <TopAppBar onToggleSidebar={toggleSidebar} />
+      <main className="ml-[260px] w-[calc(100%-260px)] max-md:ml-0 max-md:w-full h-screen overflow-y-auto">
+        <Outlet context={{ sidebarOpen, toggleSidebar } as LayoutContext} />
+      </main>
     </>
   )
-}
-
-interface LayoutContext {
-  sidebarOpen: boolean
-  toggleSidebar: () => void
 }
 
 function App() {
@@ -62,8 +66,8 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f1f5f9] flex items-center justify-center">
-        <span className="text-sm text-[#64748b]">Loading...</span>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <span className="text-sm text-text-muted">Loading...</span>
       </div>
     )
   }

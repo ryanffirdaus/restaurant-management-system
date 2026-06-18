@@ -1,26 +1,50 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-variant: #f1f5f9;
+  --color-text-main: #1e293b;
+  --color-text-muted: #64748b;
+  --color-outline: #e2e8f0;
+}
+
+.dark {
+  --color-background: #0d1117;
+  --color-surface: #161b22;
+  --color-surface-variant: #21262d;
+  --color-text-main: #f0f6fc;
+  --color-text-muted: #8b949e;
+  --color-outline: #30363d;
+}
+
 @layer base {
   body {
     @apply antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Public Sans', system-ui, sans-serif;
+    background-color: var(--color-background);
   }
 
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
   }
 
-  ::-webkit-scrollbar-track {
+  .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  ::-webkit-scrollbar-thumb {
-    @apply rounded-full;
-    background: #c6c6cd;
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #30363d;
+    border-radius: 10px;
+  }
+
+  .emerald-glow {
+    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+  }
+
+  .card-bg {
+    background-color: var(--color-surface);
   }
 }

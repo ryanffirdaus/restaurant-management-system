@@ -18,20 +18,23 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f1f5f9] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-white rounded-lg border border-[#e2e8f0] shadow-[0_1px_3px_rgba(15,23,42,0.05)] p-6">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-sm card-bg rounded-2xl border border-outline shadow-sm p-6">
         <div className="text-center mb-6">
-          <span className="text-[28px] text-[#10b981] inline-block mb-2">
-            ◈
-          </span>
-          <h1 className="text-xl font-bold text-[#1e293b] tracking-tight">
+          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mx-auto mb-3">
+            <span className="text-on-primary font-bold text-xl">S</span>
+          </div>
+          <h1 className="text-xl font-bold text-text-main tracking-tight">
             Servio
           </h1>
+          <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">
+            Admin Terminal
+          </p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
-            <label className="text-xs font-semibold text-[#475569] uppercase tracking-wide block mb-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wide block mb-1.5">
               Email
             </label>
             <input
@@ -39,13 +42,13 @@ function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-md border border-[#e2e8f0] text-sm text-[#1e293b] bg-white focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-outline text-sm text-text-main bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
               placeholder="admin@omni.com"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#475569] uppercase tracking-wide block mb-1.5">
+            <label className="text-xs font-semibold text-text-muted uppercase tracking-wide block mb-1.5">
               Password
             </label>
             <input
@@ -53,19 +56,19 @@ function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-md border border-[#e2e8f0] text-sm text-[#1e293b] bg-white focus:outline-none focus:border-[#10b981] focus:ring-1 focus:ring-[#10b981] transition-colors"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-outline text-sm text-text-main bg-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <p className="text-xs text-[#ef4444] font-medium">{error}</p>
+            <p className="text-xs text-danger font-medium">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full py-2.5 rounded-md text-sm font-semibold bg-[#0f172a] text-white min-h-[44px] hover:bg-[#1e293b] transition-colors disabled:opacity-50"
+            className="w-full py-2.5 rounded-xl text-sm font-semibold bg-primary text-on-primary min-h-[44px] hover:opacity-90 transition-all disabled:opacity-50 shadow-lg shadow-primary/10"
           >
             {submitting ? "Signing in..." : "Sign In"}
           </button>
