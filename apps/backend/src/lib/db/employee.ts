@@ -5,7 +5,7 @@ import type { Employee, EmployeeInput } from '../../types/employee.js'
 export async function getEmployees(client?: SupabaseClient): Promise<Employee[]> {
   const { data, error } = await db(client)
     .from('employees')
-    .select('*, profile:user_id(name, phone)')
+    .select('*')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
 
@@ -16,7 +16,7 @@ export async function getEmployees(client?: SupabaseClient): Promise<Employee[]>
 export async function getEmployee(id: string, client?: SupabaseClient): Promise<Employee> {
   const { data, error } = await db(client)
     .from('employees')
-    .select('*, profile:user_id(name, phone)')
+    .select('*')
     .eq('id', id)
     .is('deleted_at', null)
     .single()
@@ -34,7 +34,7 @@ export async function createEmployee(input: EmployeeInput, client?: SupabaseClie
       salary: input.salary ?? null,
       hire_date: input.hireDate ?? new Date().toISOString().split('T')[0],
     }])
-    .select('*, profile:user_id(name, phone)')
+    .select('*')
     .single()
 
   if (error) throw error
@@ -46,7 +46,7 @@ export async function updateEmployee(id: string, input: Partial<EmployeeInput>, 
     .from('employees')
     .update(input)
     .eq('id', id)
-    .select('*, profile:user_id(name, phone)')
+    .select('*')
     .single()
 
   if (error) throw error

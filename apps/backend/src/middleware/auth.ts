@@ -7,7 +7,7 @@ async function resolveUser(req: AuthenticatedRequest, token: string) {
   if (error || !data.user) return false
 
   req.userId = data.user.id
-  req.userRole = data.user.role ?? data.user.user_metadata?.role ?? undefined
+  req.userRole = data.user.user_metadata?.role ?? data.user.role ?? undefined
   req.userToken = token
   req.userClient = createUserClient(token)
   return true
