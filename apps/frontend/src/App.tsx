@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import './styles/global.css'
 import LoginPage from './pages/LoginPage'
 import EmployeesPage from './pages/EmployeesPage'
+import UIComponentsPage from './pages/UIComponentsPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import TopAppBar from './components/TopAppBar'
@@ -78,6 +79,7 @@ function App() {
       <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
         <Route path="employees" element={<EmployeesPage />} />
+        <Route path="ui-components" element={<UIComponentsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

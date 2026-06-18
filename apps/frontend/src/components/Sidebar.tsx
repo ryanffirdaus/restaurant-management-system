@@ -15,6 +15,12 @@ const navGroups = [
     ],
   },
   {
+    label: 'System',
+    items: [
+      { label: 'UI Components', icon: 'widgets', to: '/ui-components' },
+    ],
+  },
+  {
     label: 'Analysis',
     items: [
       { label: 'Payments', icon: 'payments', to: '/payments' },

@@ -1,0 +1,37 @@
+import Icon from '../Icon'
+
+interface ValidationMessageProps {
+  state: 'valid' | 'error' | 'warning'
+  message: string
+}
+
+const stateStyles: Record<string, { icon: string; textClass: string; bgClass: string }> = {
+  valid: {
+    icon: 'check_circle',
+    textClass: 'text-primary',
+    bgClass: 'bg-primary/20',
+  },
+  error: {
+    icon: 'error',
+    textClass: 'text-danger',
+    bgClass: 'bg-danger/20',
+  },
+  warning: {
+    icon: 'warning',
+    textClass: 'text-warning/80',
+    bgClass: 'bg-warning/20',
+  },
+}
+
+export default function ValidationMessage({ state, message }: ValidationMessageProps) {
+  const s = stateStyles[state]
+
+  return (
+    <p className={`text-xs ${s.textClass} flex items-center gap-1 mt-1`}>
+      <span className={`w-4 h-4 ${s.bgClass} rounded-full flex items-center justify-center text-[10px]`}>
+        <Icon name={s.icon} className="text-xs" filled />
+      </span>
+      {message}
+    </p>
+  )
+}
