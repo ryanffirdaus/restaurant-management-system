@@ -4,7 +4,14 @@
 -- Step 1: Create new enum type
 CREATE TYPE employee_role_new AS ENUM ('admin', 'waiter', 'kitchen', 'cashier');
 
--- Step 2: Update employees table to use new enum
+-- Step 2: Drop default before altering type (cannot auto-cast default)
+ALTER TABLE employees
+  ALTER COLUMN role DROP DEFAULT;
+
+-- Step 3: Drop trigger that depends on the column (blocks type change)
+DROP TRIGGER IF EXISTS trg_sync_employee_role ON employees;
+
+-- Step 4: Update employees table to use new enum
 ALTER TABLE employees
   ALTER COLUMN role TYPE employee_role_new
   USING (
@@ -15,13 +22,23 @@ ALTER TABLE employees
     END
   );
 
--- Step 3: Drop old enum
+-- Step 5: Re-add default with new type
+ALTER TABLE employees
+  ALTER COLUMN role SET DEFAULT 'waiter';
+
+-- Step 6: Recreate trigger that depends on the column
+CREATE TRIGGER trg_sync_employee_role
+  AFTER INSERT OR UPDATE OF role ON employees
+  FOR EACH ROW
+  EXECUTE FUNCTION sync_employee_role_to_metadata();
+
+-- Step 7: Drop old enum
 DROP TYPE employee_role;
 
--- Step 4: Rename new enum to original name
+-- Step 8: Rename new enum to original name
 ALTER TYPE employee_role_new RENAME TO employee_role;
 
--- Step 5: Update RLS policies that reference old role names
+-- Step 9: Update RLS policies that reference old role names
 DROP POLICY IF EXISTS "orders_select_staff" ON orders;
 CREATE POLICY "orders_select_staff"
   ON orders FOR SELECT
