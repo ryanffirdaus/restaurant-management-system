@@ -1,5 +1,5 @@
 import { useOutletContext } from 'react-router-dom'
-import type { LayoutContext } from '../App'
+import type { LayoutContext } from '../../App'
 import {
   Button,
   TextInput,
@@ -10,20 +10,10 @@ import {
   Checkbox,
   Radio,
   FileUpload,
-} from '../components/ui'
-import AppFooter from '../components/AppFooter'
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="bg-surface/40 border border-surface-variant rounded-2xl p-6">
-      <h3 className="text-lg font-semibold text-text-main mb-6 flex items-center gap-2">
-        <span className="w-1.5 h-6 bg-primary rounded-full" />
-        {title}
-      </h3>
-      {children}
-    </section>
-  )
-}
+  SearchBar,
+} from '../../components/ui'
+import Section from './components/Section'
+import AppFooter from '../../components/AppFooter'
 
 export default function UIComponentsPage() {
   useOutletContext<LayoutContext>()
@@ -53,8 +43,21 @@ export default function UIComponentsPage() {
               />
               <TextInput label="Disabled Input" value="Disabled Input" disabled />
             </div>
-            <div className="mt-4">
+            <div className="mt-6">
               <Textarea label="Textarea (Notes)" placeholder="Enter detailed notes here..." rows={5} />
+            </div>
+            <div className="mt-6">
+              <SearchBar
+                label="Search Bar"
+                placeholder="Search employees, menu items..."
+              />
+              <div className="mt-4">
+                <SearchBar
+                  label="Search Bar (with value)"
+                  value="Truffle Risotto"
+                  onChange={() => {}}
+                />
+              </div>
             </div>
           </Section>
 
