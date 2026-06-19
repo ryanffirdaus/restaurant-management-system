@@ -1,4 +1,4 @@
-export type EmployeeRole = 'admin' | 'manager' | 'chef' | 'cashier' | 'waiter'
+export type EmployeeRole = 'admin' | 'waiter' | 'kitchen' | 'cashier'
 
 export interface Employee {
   id: string

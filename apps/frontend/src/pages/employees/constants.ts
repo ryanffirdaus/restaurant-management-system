@@ -2,7 +2,7 @@ import type { FormData } from './types'
 
 export const emptyForm: FormData = { email: '', password: '', name: '', role: 'waiter', salary: '' }
 
-export const roles = ['admin', 'manager', 'chef', 'cashier', 'waiter']
+export const roles = ['admin', 'waiter', 'kitchen', 'cashier']
 
 export const roleOptions = roles.map((r) => ({ value: r, label: r.charAt(0).toUpperCase() + r.slice(1) }))
 
@@ -19,8 +19,7 @@ export const roleFilterOptions = [
 
 export const roleVariant: Record<string, 'primary' | 'warning' | 'danger' | 'info'> = {
   admin: 'danger',
-  manager: 'warning',
-  chef: 'info',
+  kitchen: 'info',
   cashier: 'primary',
   waiter: 'primary',
 }

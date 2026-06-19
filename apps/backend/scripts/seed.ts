@@ -16,10 +16,9 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 
 const accounts = [
   { email: 'admin@omni.com', password: 'admin123', name: 'Admin Utama', role: 'admin' as const },
-  { email: 'manager@omni.com', password: 'manager123', name: 'Manager Resto', role: 'manager' as const },
-  { email: 'chef@omni.com', password: 'chef123', name: 'Kepala Dapur', role: 'chef' as const },
-  { email: 'cashier@omni.com', password: 'cashier123', name: 'Kasir', role: 'cashier' as const },
   { email: 'waiter@omni.com', password: 'waiter123', name: 'Pelayan', role: 'waiter' as const },
+  { email: 'kitchen@omni.com', password: 'kitchen123', name: 'Kepala Dapur', role: 'kitchen' as const },
+  { email: 'cashier@omni.com', password: 'cashier123', name: 'Kasir', role: 'cashier' as const },
 ]
 
 async function ensureUser(acct: typeof accounts[number]) {
