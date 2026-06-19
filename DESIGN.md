@@ -194,6 +194,3 @@ The design system adopts a **Soft (0.25rem)** roundedness profile to balance mod
 ### Real-Time Activity Feed
 - Compact list items with a vertical timeline thread on the left.
 - Time stamps use `label-sm` in `text-muted`.
-
-### Branch Selector
-- A persistent dropdown in the header or top-left of the content area. Should allow for "Select All" or individual branch filtering.
