@@ -1,12 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-
-export function asyncHandler(
-  fn: (req: Request, res: Response, next: NextFunction) => Promise<any>
-) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next)
-  }
-}
+import { AppError } from '../shared/errors/AppError.js'
 
 export function errorHandler(
   err: Error,
@@ -14,6 +7,9 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
+  if (err instanceof AppError) {
+    return res.status(err.statusCode).json({ error: err.message })
+  }
   console.error('[ERROR]', err.message)
   res.status(500).json({ error: err.message })
 }

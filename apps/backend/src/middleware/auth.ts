@@ -1,9 +1,9 @@
 import type { Response, NextFunction } from 'express'
-import { supabase, createUserClient } from '../config/supabase.js'
-import type { AuthenticatedRequest } from '../types/auth.js'
+import { getSupabase, createUserClient } from '../config/supabase.js'
+import type { AuthenticatedRequest } from '../shared/types/auth.js'
 
 async function resolveUser(req: AuthenticatedRequest, token: string) {
-  const { data, error } = await supabase.auth.getUser(token)
+  const { data, error } = await getSupabase().auth.getUser(token)
   if (error || !data.user) return false
 
   req.userId = data.user.id
