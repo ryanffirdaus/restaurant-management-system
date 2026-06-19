@@ -21,5 +21,5 @@ export const roleVariant: Record<string, 'primary' | 'warning' | 'danger' | 'inf
   admin: 'danger',
   kitchen: 'info',
   cashier: 'primary',
-  waiter: 'primary',
+  waiter: 'warning',
 }
