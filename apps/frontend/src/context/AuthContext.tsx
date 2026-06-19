@@ -32,9 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           employeeRole: data.employee?.role ?? null,
           loading: false,
         }))
+      } else {
+        setState({ user: null, profile: null, employeeRole: null, loading: false })
       }
     } catch {
-      // silently fail
+      setState({ user: null, profile: null, employeeRole: null, loading: false })
     }
   }, [])
 
