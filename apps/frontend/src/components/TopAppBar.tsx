@@ -1,54 +1,59 @@
-import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useLocation } from 'react-router-dom'
 import Icon from './Icon'
 import SearchInput from './SearchInput'
 
-interface TopAppBarProps {
-  onToggleSidebar: () => void
+const pageTitles: Record<string, string> = {
+  '/': 'Overview',
+  '/menu': 'Menu',
+  '/orders': 'Orders',
+  '/employees': 'Employees',
+  '/tables': 'Tables',
+  '/payments': 'Payments',
+  '/analytics': 'Analytics',
+  '/ui-components': 'UI Components',
 }
 
-export default function TopAppBar({ onToggleSidebar }: TopAppBarProps) {
-  const { user, profile, employeeRole } = useAuth()
-  const { isDark, toggleTheme } = useTheme()
-  const displayName = (profile?.name as string) ?? user?.user_metadata?.name ?? user?.email ?? 'User'
-  const role = employeeRole ?? user?.user_metadata?.role ?? 'Staff'
+interface TopAppBarProps {
+  onToggleSidebar: () => void
+  sidebarOpen: boolean
+}
+
+export default function TopAppBar({ onToggleSidebar, sidebarOpen }: TopAppBarProps) {
+  const location = useLocation()
+  const title = pageTitles[location.pathname] ?? 'Dashboard'
 
   return (
-    <header className="fixed top-0 right-0 w-[calc(100%-260px)] max-md:w-full h-16 bg-background border-b border-outline flex justify-between items-center px-container-margin z-40">
-      <div className="flex items-center gap-3 flex-1 max-w-xl">
-        <button
-          className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-text-muted hover:bg-surface-variant transition-colors"
-          onClick={onToggleSidebar}
-        >
-          <Icon name="menu" />
-        </button>
-        <SearchInput value="" onChange={() => {}} />
+    <header
+      className={`fixed top-0 right-0 h-16 bg-background/80 backdrop-blur border-b border-outline flex items-center px-4 gap-3 z-40 transition-all duration-200 ${
+        sidebarOpen
+          ? 'left-sidebar max-md:left-0'
+          : 'left-0'
+      }`}
+    >
+      <button
+        className="w-9 h-9 rounded-xl flex items-center justify-center text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors shrink-0"
+        onClick={onToggleSidebar}
+        title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+      >
+        <Icon name={sidebarOpen ? 'menu_open' : 'menu'} className="text-xl" />
+      </button>
+
+      <span className="text-sm font-semibold text-text-main hidden sm:block shrink-0">
+        {title}
+      </span>
+
+      <div className="flex-1 max-w-sm">
+        <SearchInput value="" onChange={() => {}} placeholder="Search anything..." />
       </div>
-      <div className="flex items-center gap-5 max-md:hidden">
-        <div className="flex items-center gap-4 text-text-muted">
-          <button className="hover:text-text-main transition-colors" title="Notifications">
-            <Icon name="notifications" />
-          </button>
-          <button className="hover:text-text-main transition-colors" onClick={toggleTheme} title="Toggle theme">
-            <Icon name={isDark ? 'light_mode' : 'dark_mode'} />
-          </button>
-          <button className="hover:text-text-main transition-colors" title="Language">
-            <Icon name="language" />
-          </button>
-        </div>
-        <div className="h-6 w-px bg-outline" />
-        <div className="flex items-center gap-3">
-          <button className="px-4 py-1.5 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm font-semibold hover:bg-primary/20 transition-all">
-            Clock In
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold shrink-0">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-            <span className="text-sm font-medium text-text-main">{displayName}</span>
-            <Icon name="expand_more" className="text-sm text-text-muted" />
-          </div>
-        </div>
+
+      <div className="ml-auto flex items-center gap-1 text-text-muted">
+        <button
+          className="w-9 h-9 rounded-xl flex items-center justify-center hover:text-text-main hover:bg-surface-variant transition-colors relative"
+          title="Notifications"
+        >
+          <Icon name="notifications" className="text-xl" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
+        </button>
       </div>
     </header>
   )

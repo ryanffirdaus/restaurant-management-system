@@ -1,9 +1,10 @@
 import { Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import './styles/global.css'
-import LoginPage from './pages/login'
-import EmployeesPage from './pages/employees'
-import UIComponentsPage from './pages/ui-components'
+import LoginPage from './pages/LoginPage'
+import EmployeesPage from './pages/EmployeesPage'
+import UIComponentsPage from './pages/UIComponentsPage'
+import MenuPage from './pages/MenuPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import Sidebar from './components/Sidebar'
 import TopAppBar from './components/TopAppBar'
@@ -54,8 +55,12 @@ function DashboardLayout() {
         userRole={role}
         userInitial={initial}
       />
-      <TopAppBar onToggleSidebar={toggleSidebar} />
-      <main className="ml-[260px] w-[calc(100%-260px)] max-md:ml-0 max-md:w-full h-screen overflow-y-auto">
+      <TopAppBar onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
+      <main
+        className={`h-screen overflow-y-auto transition-all duration-200 ${
+          sidebarOpen ? 'ml-sidebar max-md:ml-0' : 'ml-0'
+        }`}
+      >
         <Outlet context={{ sidebarOpen, toggleSidebar } as LayoutContext} />
       </main>
     </>
@@ -78,6 +83,7 @@ function App() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
+        <Route path="menu" element={<MenuPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="ui-components" element={<UIComponentsPage />} />
       </Route>

@@ -5,26 +5,26 @@ import Icon from './Icon'
 
 const navGroups = [
   {
-    label: 'Dashboards',
+    label: 'Main',
     items: [
       { label: 'Overview', icon: 'grid_view', to: '/' },
       { label: 'Menu', icon: 'restaurant_menu', to: '/menu' },
       { label: 'Orders', icon: 'receipt_long', to: '/orders' },
-      { label: 'Employees', icon: 'group', to: '/employees' },
       { label: 'Tables', icon: 'table_bar', to: '/tables' },
+    ],
+  },
+  {
+    label: 'Management',
+    items: [
+      { label: 'Employees', icon: 'group', to: '/employees' },
+      { label: 'Payments', icon: 'payments', to: '/payments' },
+      { label: 'Analytics', icon: 'monitoring', to: '/analytics' },
     ],
   },
   {
     label: 'System',
     items: [
       { label: 'UI Components', icon: 'widgets', to: '/ui-components' },
-    ],
-  },
-  {
-    label: 'Analysis',
-    items: [
-      { label: 'Payments', icon: 'payments', to: '/payments' },
-      { label: 'Analytics', icon: 'monitoring', to: '/analytics' },
     ],
   },
 ]
@@ -50,32 +50,29 @@ function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: S
       <nav
         className={`
           fixed h-full w-sidebar left-0 top-0 border-r border-outline
-          bg-background flex flex-col py-6 z-50
+          bg-background flex flex-col z-50
           transition-transform duration-200 ease-in-out
           ${open ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        <div className="px-6 mb-8 flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary font-bold">
+        {/* Brand */}
+        <div className="h-16 px-5 flex items-center gap-3 border-b border-outline shrink-0">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary font-bold text-sm shrink-0">
             S
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-text-main">Servio</h1>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Admin Terminal</p>
+            <h1 className="text-base font-bold tracking-tight text-text-main leading-tight">Servio</h1>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none">
+              Admin Terminal
+            </p>
           </div>
         </div>
 
-        <div className="px-6 mb-6">
-          <button className="w-full bg-primary text-on-primary py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-semibold hover:opacity-90 transition-all shadow-lg shadow-primary/10">
-            <Icon name="add" />
-            <span>New Order</span>
-          </button>
-        </div>
-
-        <div className="flex-1 px-3 space-y-1 overflow-y-auto custom-scrollbar">
+        {/* Nav */}
+        <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto custom-scrollbar">
           {navGroups.map((group) => (
-            <div key={group.label}>
-              <p className="px-4 text-[11px] font-bold text-text-muted uppercase tracking-widest mb-2 mt-6 first:mt-0">
+            <div key={group.label} className="mb-1">
+              <p className="px-3 text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1 mt-5 first:mt-1">
                 {group.label}
               </p>
               {group.items.map((item) => (
@@ -85,14 +82,14 @@ function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: S
                   end={item.to === '/'}
                   onClick={isMobile ? onClose : undefined}
                   className={({ isActive }) =>
-                    `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                       isActive
-                        ? 'bg-surface-variant text-primary font-semibold'
+                        ? 'bg-primary/10 text-primary font-semibold'
                         : 'text-text-muted hover:text-text-main hover:bg-surface-variant'
                     }`
                   }
                 >
-                  <Icon name={item.icon} className="text-xl" />
+                  <Icon name={item.icon} className="text-xl shrink-0" />
                   <span>{item.label}</span>
                 </NavLink>
               ))}
@@ -100,32 +97,34 @@ function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: S
           ))}
         </div>
 
-        <div className="px-4 mt-auto pt-6 border-t border-outline space-y-1">
-          <div className="flex items-center gap-3 px-4 py-2.5">
-            <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-semibold shrink-0">
+        {/* Bottom */}
+        <div className="border-t border-outline px-3 py-3 shrink-0 space-y-0.5">
+          {/* User info */}
+          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-variant/50">
+            <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-bold shrink-0">
               {userInitial}
             </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-sm font-medium text-text-main truncate">{userName}</span>
-              <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">{userRole}</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-text-main truncate leading-tight">{userName}</p>
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-tight">
+                {userRole}
+              </p>
             </div>
           </div>
+
           <button
             onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text-main transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors"
           >
-            <Icon name={isDark ? 'light_mode' : 'dark_mode'} className="text-xl" />
+            <Icon name={isDark ? 'light_mode' : 'dark_mode'} className="text-xl shrink-0" />
             <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
           </button>
-          <button className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text-main transition-colors">
-            <Icon name="settings" className="text-xl" />
-            <span>Settings</span>
-          </button>
+
           <button
             onClick={logout}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text-main transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
           >
-            <Icon name="logout" className="text-xl" />
+            <Icon name="logout" className="text-xl shrink-0" />
             <span>Logout</span>
           </button>
         </div>
