@@ -22,17 +22,21 @@ export async function logout(userId: string): Promise<void> {
 }
 
 export async function getMe(userId: string): Promise<MeResponse> {
-  const { data: profile } = await getSupabase()
+  const { data: profile, error: profileError } = await getSupabase()
     .from('profiles')
     .select('*')
     .eq('id', userId)
-    .single()
+    .maybeSingle()
 
-  const { data: employee } = await getSupabase()
+  if (profileError) throw new AppError(`Failed to fetch profile: ${profileError.message}`, 500)
+
+  const { data: employee, error: employeeError } = await getSupabase()
     .from('employees')
     .select('role')
     .eq('user_id', userId)
     .maybeSingle()
+
+  if (employeeError) throw new AppError(`Failed to fetch employee: ${employeeError.message}`, 500)
 
   return {
     id: userId,

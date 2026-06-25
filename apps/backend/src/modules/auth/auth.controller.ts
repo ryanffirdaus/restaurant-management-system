@@ -17,6 +17,9 @@ export async function logout(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function me(req: AuthenticatedRequest, res: Response) {
-  const result = await authService.getMe(req.userId!)
+  if (!req.userId) {
+    return res.status(401).json({ error: 'User not authenticated' })
+  }
+  const result = await authService.getMe(req.userId)
   res.json({ ...result, role: req.userRole })
 }
