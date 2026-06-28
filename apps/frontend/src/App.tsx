@@ -5,6 +5,8 @@ import LoginPage from "./pages/login/LoginPage";
 import EmployeesPage from "./pages/employees/EmployeesPage";
 import UIComponentsPage from "./pages/ui-components/UIComponentsPage";
 import MenuPage from "./pages/MenuPage";
+import OrdersPage from "./pages/orders/OrdersPage";
+import TablesPage from "./pages/tables/TablesPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 import TopAppBar from "./components/TopAppBar";
@@ -100,6 +102,8 @@ function App() {
       >
         <Route index element={<Dashboard />} />
         <Route path="menu" element={<MenuPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="tables" element={<TablesPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="ui-components" element={<UIComponentsPage />} />
       </Route>

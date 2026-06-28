@@ -1,191 +1,207 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useOutletContext } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabase'
-import type { Column } from '../components/Table'
-import Table from '../components/Table'
-import Badge from '../components/Badge'
-import Card from '../components/Card'
-import Icon from '../components/Icon'
-import SearchInput from '../components/SearchInput'
-import Modal from '../components/Modal'
-import { Button, TextInput, Textarea, Select, Toggle } from '../components/ui'
-import type { LayoutContext } from '../App'
+import { useState, useEffect, useMemo } from "react";
+import { useOutletContext } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabase";
+import type { Column } from "../components/Table";
+import Table from "../components/Table";
+import Badge from "../components/Badge";
+import Card from "../components/Card";
+import Icon from "../components/Icon";
+import SearchInput from "../components/SearchInput";
+import Modal from "../components/Modal";
+import { Button, TextInput, Textarea, Select, Toggle } from "../components/ui";
+import type { LayoutContext } from "../App";
 
 interface MenuItem {
-  id: string
-  name: string
-  description: string | null
-  price: number
-  category: string | null
-  available: boolean
-  image_url: string | null
-  created_at: string
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  category: string | null;
+  available: boolean;
+  image_url: string | null;
+  created_at: string;
 }
 
 interface MenuFormData {
-  name: string
-  description: string
-  price: string
-  category: string
-  available: boolean
-  image_url: string
+  name: string;
+  description: string;
+  price: string;
+  category: string;
+  available: boolean;
+  image_url: string;
 }
 
 const emptyForm: MenuFormData = {
-  name: '',
-  description: '',
-  price: '',
-  category: '',
+  name: "",
+  description: "",
+  price: "",
+  category: "",
   available: true,
-  image_url: '',
-}
+  image_url: "",
+};
 
 const categories = [
-  { value: 'main', label: 'Main Course' },
-  { value: 'appetizer', label: 'Appetizer' },
-  { value: 'drinks', label: 'Drinks' },
-  { value: 'dessert', label: 'Dessert' },
-  { value: 'snacks', label: 'Snacks' },
-  { value: 'other', label: 'Other' },
-]
+  { value: "main", label: "Main Course" },
+  { value: "appetizer", label: "Appetizer" },
+  { value: "drinks", label: "Drinks" },
+  { value: "dessert", label: "Dessert" },
+  { value: "snacks", label: "Snacks" },
+  { value: "other", label: "Other" },
+];
 
 const categoryFilterOptions = [
-  { value: 'all', label: 'All Categories' },
+  { value: "all", label: "All Categories" },
   ...categories,
-]
+];
 
 const availabilityOptions = [
-  { value: 'all', label: 'All Items' },
-  { value: 'available', label: 'Available' },
-  { value: 'unavailable', label: 'Unavailable' },
-]
+  { value: "all", label: "All Items" },
+  { value: "available", label: "Available" },
+  { value: "unavailable", label: "Unavailable" },
+];
 
-const categoryVariant: Record<string, 'primary' | 'warning' | 'danger' | 'info' | 'neutral'> = {
-  main: 'primary',
-  appetizer: 'info',
-  drinks: 'primary',
-  dessert: 'warning',
-  snacks: 'neutral',
-  other: 'neutral',
-}
+const categoryVariant: Record<
+  string,
+  "primary" | "warning" | "danger" | "info" | "neutral"
+> = {
+  main: "primary",
+  appetizer: "info",
+  drinks: "primary",
+  dessert: "warning",
+  snacks: "neutral",
+  other: "neutral",
+};
 
-type SortKey = 'name' | 'category' | 'price' | 'available'
+type SortKey = "name" | "category" | "price" | "available";
 
 function formatPrice(price: number) {
-  return `Rp ${price.toLocaleString('id-ID')}`
+  return `$ ${price.toLocaleString("id-ID")}`;
 }
 
 function getCategoryLabel(value: string | null) {
-  return categories.find((c) => c.value === value)?.label ?? value ?? '—'
+  return categories.find((c) => c.value === value)?.label ?? value ?? "—";
 }
 
 export default function MenuPage() {
-  useOutletContext<LayoutContext>()
-  const { employeeRole } = useAuth()
+  useOutletContext<LayoutContext>();
+  const { employeeRole } = useAuth();
 
-  const [items, setItems] = useState<MenuItem[]>([])
-  const [loading, setLoading] = useState(true)
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [addModal, setAddModal] = useState(false)
-  const [editModal, setEditModal] = useState<MenuItem | null>(null)
-  const [infoModal, setInfoModal] = useState<MenuItem | null>(null)
+  const [addModal, setAddModal] = useState(false);
+  const [editModal, setEditModal] = useState<MenuItem | null>(null);
+  const [infoModal, setInfoModal] = useState<MenuItem | null>(null);
 
-  const [form, setForm] = useState<MenuFormData>(emptyForm)
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [form, setForm] = useState<MenuFormData>(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [search, setSearch] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
-  const [availFilter, setAvailFilter] = useState('all')
-  const [sortKey, setSortKey] = useState<SortKey>('name')
-  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+  const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [availFilter, setAvailFilter] = useState("all");
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
-  const isAdmin = employeeRole === 'admin' || employeeRole === 'manager'
+  const isAdmin = employeeRole === "admin" || employeeRole === "manager";
 
   function toggleSort(key: string) {
     if (sortKey === key) {
-      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
-      setSortKey(key as SortKey)
-      setSortDir('asc')
+      setSortKey(key as SortKey);
+      setSortDir("asc");
     }
   }
 
   async function fetchItems() {
-    const token = (await supabase.auth.getSession()).data.session?.access_token
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
     const res = await fetch(`${import.meta.env.VITE_API_URL}/menu`, {
       headers: { Authorization: `Bearer ${token}` },
-    })
-    if (res.ok) setItems(await res.json())
-    setLoading(false)
+    });
+    if (res.ok) setItems(await res.json());
+    setLoading(false);
   }
 
   useEffect(() => {
-    fetchItems()
-  }, [])
+    fetchItems();
+  }, []);
 
   const filtered = useMemo(() => {
-    const q = search.toLowerCase()
+    const q = search.toLowerCase();
     let list = items.filter((item) => {
-      if (availFilter === 'available' && !item.available) return false
-      if (availFilter === 'unavailable' && item.available) return false
-      if (categoryFilter !== 'all' && item.category !== categoryFilter) return false
+      if (availFilter === "available" && !item.available) return false;
+      if (availFilter === "unavailable" && item.available) return false;
+      if (categoryFilter !== "all" && item.category !== categoryFilter)
+        return false;
       if (q) {
-        const name = item.name.toLowerCase()
-        const cat = (item.category ?? '').toLowerCase()
-        const desc = (item.description ?? '').toLowerCase()
-        if (!name.includes(q) && !cat.includes(q) && !desc.includes(q)) return false
+        const name = item.name.toLowerCase();
+        const cat = (item.category ?? "").toLowerCase();
+        const desc = (item.description ?? "").toLowerCase();
+        if (!name.includes(q) && !cat.includes(q) && !desc.includes(q))
+          return false;
       }
-      return true
-    })
+      return true;
+    });
 
     list.sort((a, b) => {
-      let cmp = 0
+      let cmp = 0;
       switch (sortKey) {
-        case 'name': cmp = a.name.localeCompare(b.name); break
-        case 'category': cmp = (a.category ?? '').localeCompare(b.category ?? ''); break
-        case 'price': cmp = a.price - b.price; break
-        case 'available': cmp = Number(a.available) - Number(b.available); break
+        case "name":
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case "category":
+          cmp = (a.category ?? "").localeCompare(b.category ?? "");
+          break;
+        case "price":
+          cmp = a.price - b.price;
+          break;
+        case "available":
+          cmp = Number(a.available) - Number(b.available);
+          break;
       }
-      return sortDir === 'asc' ? cmp : -cmp
-    })
+      return sortDir === "asc" ? cmp : -cmp;
+    });
 
-    return list
-  }, [items, search, categoryFilter, availFilter, sortKey, sortDir])
+    return list;
+  }, [items, search, categoryFilter, availFilter, sortKey, sortDir]);
 
   function openAdd() {
-    setForm(emptyForm)
-    setError(null)
-    setAddModal(true)
+    setForm(emptyForm);
+    setError(null);
+    setAddModal(true);
   }
 
   function openEdit(item: MenuItem) {
     setForm({
       name: item.name,
-      description: item.description ?? '',
+      description: item.description ?? "",
       price: String(item.price),
-      category: item.category ?? '',
+      category: item.category ?? "",
       available: item.available,
-      image_url: item.image_url ?? '',
-    })
-    setError(null)
-    setEditModal(item)
+      image_url: item.image_url ?? "",
+    });
+    setError(null);
+    setEditModal(item);
   }
 
   async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (!form.price || Number(form.price) < 0) {
-      setError('Price must be a valid positive number')
-      return
+      setError("Price must be a valid positive number");
+      return;
     }
-    setError(null)
-    setSubmitting(true)
+    setError(null);
+    setSubmitting(true);
 
-    const token = (await supabase.auth.getSession()).data.session?.access_token
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
     const res = await fetch(`${import.meta.env.VITE_API_URL}/menu`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify({
         name: form.name,
         description: form.description || undefined,
@@ -194,79 +210,93 @@ export default function MenuPage() {
         available: form.available,
         image_url: form.image_url || undefined,
       }),
-    })
+    });
 
-    setSubmitting(false)
+    setSubmitting(false);
     if (!res.ok) {
-      const err = await res.json()
-      setError(err.error ?? 'Failed to create item')
-      return
+      const err = await res.json();
+      setError(err.error ?? "Failed to create item");
+      return;
     }
 
-    setAddModal(false)
-    fetchItems()
+    setAddModal(false);
+    fetchItems();
   }
 
   async function handleEdit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!editModal) return
-    if (form.price !== '' && Number(form.price) < 0) {
-      setError('Price must be a valid positive number')
-      return
+    e.preventDefault();
+    if (!editModal) return;
+    if (form.price !== "" && Number(form.price) < 0) {
+      setError("Price must be a valid positive number");
+      return;
     }
-    setError(null)
-    setSubmitting(true)
+    setError(null);
+    setSubmitting(true);
 
-    const token = (await supabase.auth.getSession()).data.session?.access_token
-    const res = await fetch(`${import.meta.env.VITE_API_URL}/menu/${editModal.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        name: form.name,
-        description: form.description || undefined,
-        price: Number(form.price),
-        category: form.category || undefined,
-        available: form.available,
-        image_url: form.image_url || undefined,
-      }),
-    })
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/menu/${editModal.id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: form.name,
+          description: form.description || undefined,
+          price: Number(form.price),
+          category: form.category || undefined,
+          available: form.available,
+          image_url: form.image_url || undefined,
+        }),
+      },
+    );
 
-    setSubmitting(false)
+    setSubmitting(false);
     if (!res.ok) {
-      const err = await res.json()
-      setError(err.error ?? 'Failed to update item')
-      return
+      const err = await res.json();
+      setError(err.error ?? "Failed to update item");
+      return;
     }
 
-    setEditModal(null)
-    fetchItems()
+    setEditModal(null);
+    fetchItems();
   }
 
   async function handleDelete(item: MenuItem) {
-    if (!confirm(`Hapus "${item.name}" dari menu? Tindakan ini tidak dapat dibatalkan.`)) return
-    const token = (await supabase.auth.getSession()).data.session?.access_token
+    if (
+      !confirm(
+        `Hapus "${item.name}" dari menu? Tindakan ini tidak dapat dibatalkan.`,
+      )
+    )
+      return;
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
     await fetch(`${import.meta.env.VITE_API_URL}/menu/${item.id}`, {
-      method: 'DELETE',
+      method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
-    })
-    fetchItems()
+    });
+    fetchItems();
   }
 
   async function toggleAvailability(item: MenuItem) {
-    const token = (await supabase.auth.getSession()).data.session?.access_token
-    await fetch(`${import.meta.env.VITE_API_URL}/menu/${item.id}/availability`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    fetchItems()
+    const token = (await supabase.auth.getSession()).data.session?.access_token;
+    await fetch(
+      `${import.meta.env.VITE_API_URL}/menu/${item.id}/availability`,
+      {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    fetchItems();
   }
 
   const columns: Column<MenuItem>[] = [
     {
-      key: 'name',
-      label: 'Item',
+      key: "name",
+      label: "Item",
       sortable: true,
-      className: 'font-medium text-text-main whitespace-nowrap',
+      className: "font-medium text-text-main whitespace-nowrap",
       render: (item) => (
         <div className="flex items-center gap-3">
           {item.image_url ? (
@@ -277,26 +307,31 @@ export default function MenuPage() {
             />
           ) : (
             <div className="w-9 h-9 rounded-lg bg-surface-variant flex items-center justify-center shrink-0">
-              <Icon name="restaurant_menu" className="text-base text-text-muted" />
+              <Icon
+                name="restaurant_menu"
+                className="text-base text-text-muted"
+              />
             </div>
           )}
           <div>
             <p className="font-semibold text-text-main text-sm">{item.name}</p>
             {item.description && (
-              <p className="text-xs text-text-muted truncate max-w-[220px]">{item.description}</p>
+              <p className="text-xs text-text-muted truncate max-w-[220px]">
+                {item.description}
+              </p>
             )}
           </div>
         </div>
       ),
     },
     {
-      key: 'category',
-      label: 'Category',
+      key: "category",
+      label: "Category",
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: "whitespace-nowrap",
       render: (item) =>
         item.category ? (
-          <Badge variant={categoryVariant[item.category] ?? 'neutral'}>
+          <Badge variant={categoryVariant[item.category] ?? "neutral"}>
             {getCategoryLabel(item.category)}
           </Badge>
         ) : (
@@ -304,33 +339,33 @@ export default function MenuPage() {
         ),
     },
     {
-      key: 'price',
-      label: 'Price',
+      key: "price",
+      label: "Price",
       sortable: true,
-      className: 'tabular-nums whitespace-nowrap font-semibold text-text-main',
+      className: "tabular-nums whitespace-nowrap font-semibold text-text-main",
       render: (item) => formatPrice(item.price),
     },
     {
-      key: 'available',
-      label: 'Status',
+      key: "available",
+      label: "Status",
       sortable: true,
-      className: 'whitespace-nowrap',
+      className: "whitespace-nowrap",
       render: (item) => (
         <button
           onClick={() => isAdmin && toggleAvailability(item)}
-          title={isAdmin ? 'Toggle availability' : undefined}
-          className={isAdmin ? 'cursor-pointer' : 'cursor-default'}
+          title={isAdmin ? "Toggle availability" : undefined}
+          className={isAdmin ? "cursor-pointer" : "cursor-default"}
         >
-          <Badge variant={item.available ? 'primary' : 'neutral'}>
-            {item.available ? 'Available' : 'Unavailable'}
+          <Badge variant={item.available ? "primary" : "neutral"}>
+            {item.available ? "Available" : "Unavailable"}
           </Badge>
         </button>
       ),
     },
     {
-      key: 'actions' as never,
-      label: '',
-      className: 'whitespace-nowrap',
+      key: "actions" as never,
+      label: "",
+      className: "whitespace-nowrap",
       render: (item) => (
         <div className="flex items-center gap-0.5">
           <button
@@ -361,22 +396,31 @@ export default function MenuPage() {
         </div>
       ),
     },
-  ]
+  ];
 
   const modalFooter = (formId: string, label: string) => (
     <>
       <Button
         variant="secondary"
         type="button"
-        onClick={() => { setAddModal(false); setEditModal(null); setError(null) }}
+        onClick={() => {
+          setAddModal(false);
+          setEditModal(null);
+          setError(null);
+        }}
       >
         Cancel
       </Button>
-      <Button variant="primary" type="submit" form={formId} disabled={submitting}>
-        {submitting ? 'Saving...' : label}
+      <Button
+        variant="primary"
+        type="submit"
+        form={formId}
+        disabled={submitting}
+      >
+        {submitting ? "Saving..." : label}
       </Button>
     </>
-  )
+  );
 
   return (
     <div>
@@ -384,8 +428,12 @@ export default function MenuPage() {
       <div className="p-container-margin space-y-gutter">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-text-main tracking-tight">Menu</h1>
-            <p className="text-sm text-text-muted mt-1">Manage restaurant menu items</p>
+            <h1 className="text-2xl font-bold text-text-main tracking-tight">
+              Menu
+            </h1>
+            <p className="text-sm text-text-muted mt-1">
+              Manage restaurant menu items
+            </p>
           </div>
           {isAdmin && (
             <Button
@@ -442,10 +490,13 @@ export default function MenuPage() {
       {/* Add Modal */}
       <Modal
         open={addModal}
-        onClose={() => { setAddModal(false); setError(null) }}
+        onClose={() => {
+          setAddModal(false);
+          setError(null);
+        }}
         title="Add Menu Item"
         subtitle="Create a new item for the menu"
-        footer={modalFooter('menu-add-form', 'Create Item')}
+        footer={modalFooter("menu-add-form", "Create Item")}
       >
         <MenuForm
           id="menu-add-form"
@@ -459,10 +510,13 @@ export default function MenuPage() {
       {/* Edit Modal */}
       <Modal
         open={!!editModal}
-        onClose={() => { setEditModal(null); setError(null) }}
+        onClose={() => {
+          setEditModal(null);
+          setError(null);
+        }}
         title="Edit Menu Item"
         subtitle={editModal?.name}
-        footer={modalFooter('menu-edit-form', 'Save Changes')}
+        footer={modalFooter("menu-edit-form", "Save Changes")}
       >
         <MenuForm
           id="menu-edit-form"
@@ -494,22 +548,28 @@ export default function MenuPage() {
                 className="w-full h-40 object-cover rounded-xl bg-surface-variant mb-4"
               />
             )}
-            <MenuInfoRow icon="restaurant_menu" label="Name" value={infoModal.name} />
+            <MenuInfoRow
+              icon="restaurant_menu"
+              label="Name"
+              value={infoModal.name}
+            />
             <MenuInfoRow
               icon="notes"
               label="Description"
-              value={infoModal.description ?? '—'}
+              value={infoModal.description ?? "—"}
             />
             <MenuInfoRow
               icon="category"
               label="Category"
               value={
                 infoModal.category ? (
-                  <Badge variant={categoryVariant[infoModal.category] ?? 'neutral'}>
+                  <Badge
+                    variant={categoryVariant[infoModal.category] ?? "neutral"}
+                  >
                     {getCategoryLabel(infoModal.category)}
                   </Badge>
                 ) : (
-                  '—'
+                  "—"
                 )
               }
             />
@@ -526,25 +586,28 @@ export default function MenuPage() {
               icon="toggle_on"
               label="Status"
               value={
-                <Badge variant={infoModal.available ? 'primary' : 'neutral'}>
-                  {infoModal.available ? 'Available' : 'Unavailable'}
+                <Badge variant={infoModal.available ? "primary" : "neutral"}>
+                  {infoModal.available ? "Available" : "Unavailable"}
                 </Badge>
               }
             />
             <MenuInfoRow
               icon="calendar_today"
               label="Added"
-              value={new Date(infoModal.created_at).toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
+              value={new Date(infoModal.created_at).toLocaleDateString(
+                "id-ID",
+                {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                },
+              )}
             />
           </div>
         )}
       </Modal>
     </div>
-  )
+  );
 }
 
 function MenuForm({
@@ -554,11 +617,11 @@ function MenuForm({
   onSubmit,
   error,
 }: {
-  id: string
-  form: MenuFormData
-  setForm: React.Dispatch<React.SetStateAction<MenuFormData>>
-  onSubmit: (e: React.FormEvent) => void
-  error: string | null
+  id: string;
+  form: MenuFormData;
+  setForm: React.Dispatch<React.SetStateAction<MenuFormData>>;
+  onSubmit: (e: React.FormEvent) => void;
+  error: string | null;
 }) {
   return (
     <form id={id} onSubmit={onSubmit} className="space-y-4">
@@ -571,20 +634,23 @@ function MenuForm({
       />
       <div className="space-y-1.5">
         <label className="block text-sm font-medium text-text-muted">
-          Description <span className="text-text-muted text-xs opacity-60">(optional)</span>
+          Description{" "}
+          <span className="text-text-muted text-xs opacity-60">(optional)</span>
         </label>
         <Textarea
           placeholder="Short description of the item..."
           rows={3}
           value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, description: e.target.value }))
+          }
         />
       </div>
       <TextInput
         label="Price"
         type="number"
         placeholder="e.g. 35000"
-        hint="Rp"
+        hint="$"
         required
         min={0}
         value={form.price}
@@ -592,7 +658,8 @@ function MenuForm({
       />
       <div>
         <label className="block text-sm font-medium text-text-muted mb-1.5">
-          Category <span className="text-text-muted text-xs opacity-60">(optional)</span>
+          Category{" "}
+          <span className="text-text-muted text-xs opacity-60">(optional)</span>
         </label>
         <Select
           value={form.category}
@@ -611,14 +678,20 @@ function MenuForm({
       />
       <div className="flex items-center justify-between py-3 px-4 bg-surface-variant/40 rounded-xl border border-outline">
         <div>
-          <p className="text-sm font-medium text-text-main">Available on Menu</p>
+          <p className="text-sm font-medium text-text-main">
+            Available on Menu
+          </p>
           <p className="text-xs text-text-muted mt-0.5">
-            {form.available ? 'Visible and orderable by customers' : 'Hidden from menu'}
+            {form.available
+              ? "Visible and orderable by customers"
+              : "Hidden from menu"}
           </p>
         </div>
         <Toggle
           checked={form.available}
-          onChange={(e) => setForm((f) => ({ ...f, available: e.target.checked }))}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, available: e.target.checked }))
+          }
         />
       </div>
       {error && (
@@ -628,7 +701,7 @@ function MenuForm({
         </div>
       )}
     </form>
-  )
+  );
 }
 
 function MenuInfoRow({
@@ -636,9 +709,9 @@ function MenuInfoRow({
   label,
   value,
 }: {
-  icon: string
-  label: string
-  value: React.ReactNode
+  icon: string;
+  label: string;
+  value: React.ReactNode;
 }) {
   return (
     <div className="flex items-start gap-3 py-3 px-4 bg-surface-variant/30 rounded-xl border border-outline">
@@ -648,5 +721,5 @@ function MenuInfoRow({
         <div className="text-sm font-medium text-text-main">{value}</div>
       </div>
     </div>
-  )
+  );
 }
