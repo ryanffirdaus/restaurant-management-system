@@ -170,9 +170,9 @@ export default function OrdersPage() {
   }
 
   function getTableLabel(tableId: string | null) {
-    if (!tableId) return '—'
+    if (!tableId) return 'Takeaway'
     const t = tables.find(t => t.id === tableId)
-    return t ? `T-${String(t.table_number).padStart(2, '0')}` : '—'
+    return t ? `T-${String(t.table_number).padStart(2, '0')}` : 'Takeaway'
   }
 
   const filtered = filterStatus === 'all' ? orders : orders.filter(o => o.status === filterStatus)
@@ -200,7 +200,8 @@ export default function OrdersPage() {
     },
     {
       key: 'total_price', label: 'Total',
-      className: 'text-sm font-bold text-right text-text-main whitespace-nowrap',
+      headerClassName: 'text-right',
+      className: 'text-sm font-bold text-right text-text-main whitespace-nowrap tabular-nums',
       render: o => <span>{o.total_price != null ? formatUSD(o.total_price) : '—'}</span>,
     },
     {
@@ -219,14 +220,14 @@ export default function OrdersPage() {
       render: o => (
         <div className="flex gap-1 justify-end">
           <button onClick={() => setDetailOrder(o)} className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors">
-            <Icon name="visibility" className="text-sm" />
+            <Icon name="ri-eye-line" className="text-sm" />
           </button>
           <button onClick={() => setStatusModal({ order: o, status: o.status })} className="p-1.5 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors">
-            <Icon name="swap_horiz" className="text-sm" />
+            <Icon name="ri-arrow-left-right-line" className="text-sm" />
           </button>
           {isAdmin && (
             <button onClick={() => handleDelete(o)} className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors">
-              <Icon name="delete" className="text-sm" />
+              <Icon name="ri-delete-bin-6-line" className="text-sm" />
             </button>
           )}
         </div>
@@ -253,7 +254,7 @@ export default function OrdersPage() {
           <p className="text-sm text-text-muted mt-0.5">{orders.length} orders total</p>
         </div>
         <Button variant="primary" onClick={openCreate}>
-          <Icon name="add" className="text-base" />
+          <Icon name="ri-add-line" className="text-base" />
           New Order
         </Button>
       </div>
@@ -368,7 +369,7 @@ export default function OrdersPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
                     <span className="text-sm font-bold text-primary">{formatUSD(item.price)}</span>
-                    <Icon name="add_circle" className="text-primary opacity-0 group-hover:opacity-100 transition-opacity text-lg" />
+                    <Icon name="ri-add-circle-line" className="text-primary opacity-0 group-hover:opacity-100 transition-opacity text-lg" />
                   </div>
                 </button>
               ))}

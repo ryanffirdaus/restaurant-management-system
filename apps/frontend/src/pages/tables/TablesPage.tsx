@@ -151,11 +151,11 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
         {isAdmin && (
           <div className="flex gap-2">
             <Button variant="ghost" onClick={handleAutoLayout}>
-              <Icon name="auto_fix_high" className="text-base" />
+              <Icon name="ri-magic-line" className="text-base" />
               Auto Layout
             </Button>
             <Button variant={editMode ? 'primary' : 'outline'} onClick={() => setEditMode(v => !v)}>
-              <Icon name={editMode ? 'check' : 'drag_indicator'} className="text-base" />
+              <Icon name={editMode ? 'ri-check-line' : 'ri-drag-move-2-line'} className="text-base" />
               {editMode ? 'Done' : 'Edit Layout'}
             </Button>
           </div>
@@ -165,7 +165,7 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
       <div className="p-4 overflow-auto">
         {editMode && (
           <p className="text-xs text-text-muted mb-3 flex items-center gap-1.5">
-            <Icon name="info" className="text-sm" />
+            <Icon name="ri-information-line" className="text-sm" />
             Drag tables to rearrange. Drop onto another table to swap positions.
           </p>
         )}
@@ -227,16 +227,16 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
           <div className="flex gap-2">
             {isAdmin && (
               <Button variant="ghost" onClick={() => { onEditClick(selected); setSelected(null) }}>
-                <Icon name="edit" className="text-sm" />
+                <Icon name="ri-pencil-line" className="text-sm" />
                 Edit
               </Button>
             )}
             <Button variant="outline" onClick={() => { onStatusClick(selected); setSelected(null) }}>
-              <Icon name="swap_horiz" className="text-sm" />
+              <Icon name="ri-arrow-left-right-line" className="text-sm" />
               Status
             </Button>
             <button onClick={() => setSelected(null)} className="p-2 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors">
-              <Icon name="close" className="text-sm" />
+              <Icon name="ri-close-line" className="text-sm" />
             </button>
           </div>
         </div>
@@ -358,20 +358,20 @@ export default function TablesPage() {
               onClick={() => setView('floorplan')}
               className={`px-4 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors ${view === 'floorplan' ? 'bg-primary/10 text-primary' : 'text-text-muted hover:text-text-main hover:bg-surface-variant'}`}
             >
-              <Icon name="grid_view" className="text-sm" />
+              <Icon name="ri-dashboard-line" className="text-sm" />
               Floor Plan
             </button>
             <button
               onClick={() => setView('list')}
               className={`px-4 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors border-l border-outline ${view === 'list' ? 'bg-primary/10 text-primary' : 'text-text-muted hover:text-text-main hover:bg-surface-variant'}`}
             >
-              <Icon name="table_rows" className="text-sm" />
+              <Icon name="ri-table-2" className="text-sm" />
               List
             </button>
           </div>
           {isAdmin && (
             <Button variant="primary" onClick={openAdd}>
-              <Icon name="add" className="text-base" />
+              <Icon name="ri-add-line" className="text-base" />
               Add Table
             </Button>
           )}
@@ -420,10 +420,10 @@ export default function TablesPage() {
                   {isAdmin && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => openEdit(t)} className="p-1.5 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors">
-                        <Icon name="edit" className="text-sm" />
+                        <Icon name="ri-pencil-line" className="text-sm" />
                       </button>
                       <button onClick={() => handleDelete(t)} className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors">
-                        <Icon name="delete" className="text-sm" />
+                        <Icon name="ri-delete-bin-6-line" className="text-sm" />
                       </button>
                     </div>
                   )}
@@ -438,7 +438,7 @@ export default function TablesPage() {
                   onClick={() => setStatusModal({ table: t, status: t.status })}
                   className="mt-auto text-xs font-medium text-text-muted hover:text-primary transition-colors flex items-center gap-1"
                 >
-                  <Icon name="swap_horiz" className="text-sm" />
+                  <Icon name="ri-arrow-left-right-line" className="text-sm" />
                   Change status
                 </button>
               </div>

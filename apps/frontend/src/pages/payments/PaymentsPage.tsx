@@ -48,11 +48,11 @@ const METHOD_OPTIONS = [
 ]
 
 const METHOD_ICON: Record<string, string> = {
-  cash: 'payments',
-  debit_card: 'credit_card',
-  credit_card: 'credit_card',
-  qris: 'qr_code_2',
-  other: 'more_horiz',
+  cash: 'ri-money-dollar-circle-line',
+  debit_card: 'ri-bank-card-line',
+  credit_card: 'ri-bank-card-line',
+  qris: 'ri-qr-code-line',
+  other: 'ri-more-2-fill',
 }
 
 function methodLabel(m: string) {
@@ -147,7 +147,7 @@ export default function PaymentsPage() {
       key: 'method', label: 'Method',
       render: p => (
         <span className="flex items-center gap-1.5 text-sm text-text-main">
-          <Icon name={METHOD_ICON[p.method] ?? 'payments'} className="text-base text-text-muted" />
+          <Icon name={METHOD_ICON[p.method] ?? 'ri-money-dollar-circle-line'} className="text-base text-text-muted" />
           {methodLabel(p.method)}
         </span>
       ),
@@ -175,10 +175,10 @@ export default function PaymentsPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
         {[
-          { label: "Today's Revenue", value: formatUSD(todayRevenue), icon: 'today', cls: 'text-primary bg-primary/10' },
-          { label: 'Total Revenue', value: formatUSD(totalRevenue), icon: 'payments', cls: 'text-blue-400 bg-blue-500/10' },
-          { label: 'Transactions', value: String(payments.length), icon: 'receipt_long', cls: 'text-orange-400 bg-orange-500/10' },
-          { label: 'Unpaid Orders', value: String(unpaidOrders.length), icon: 'pending_actions', cls: 'text-danger bg-danger/10' },
+          { label: "Today's Revenue", value: formatUSD(todayRevenue), icon: 'ri-calendar-event-line', cls: 'text-primary bg-primary/10' },
+          { label: 'Total Revenue', value: formatUSD(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-blue-400 bg-blue-500/10' },
+          { label: 'Transactions', value: String(payments.length), icon: 'ri-bill-line', cls: 'text-orange-400 bg-orange-500/10' },
+          { label: 'Unpaid Orders', value: String(unpaidOrders.length), icon: 'ri-timer-line', cls: 'text-danger bg-danger/10' },
         ].map(k => (
           <div key={k.label} className="card-bg rounded-2xl border border-outline p-5 flex flex-col gap-3">
             <div className={`w-9 h-9 rounded-xl ${k.cls} flex items-center justify-center`}>
@@ -204,7 +204,7 @@ export default function PaymentsPage() {
               <div className="p-8 text-center text-text-muted text-sm">Loading...</div>
             ) : unpaidOrders.length === 0 ? (
               <div className="p-8 text-center text-text-muted text-sm flex flex-col items-center gap-2">
-                <Icon name="check_circle" className="text-3xl text-primary opacity-60" />
+                <Icon name="ri-checkbox-circle-line" className="text-3xl text-primary opacity-60" />
                 All orders are paid
               </div>
             ) : unpaidOrders.map(o => {
@@ -224,7 +224,7 @@ export default function PaymentsPage() {
                     <span className="text-sm font-bold text-text-main tabular-nums">
                       {o.total_price != null ? formatUSD(o.total_price) : '—'}
                     </span>
-                    <Icon name="arrow_forward_ios" className="text-xs text-text-muted group-hover:text-primary transition-colors" />
+                    <Icon name="ri-arrow-right-s-line" className="text-xs text-text-muted group-hover:text-primary transition-colors" />
                   </div>
                 </button>
               )
@@ -247,7 +247,7 @@ export default function PaymentsPage() {
                   <div key={m.value}>
                     <div className="flex justify-between text-sm mb-1">
                       <span className="flex items-center gap-1.5 font-medium text-text-main">
-                        <Icon name={METHOD_ICON[m.value] ?? 'payments'} className="text-base text-text-muted" />
+                        <Icon name={METHOD_ICON[m.value] ?? 'ri-money-dollar-circle-line'} className="text-base text-text-muted" />
                         {m.label}
                       </span>
                       <span className="font-bold text-text-main tabular-nums">{formatUSD(m.total)}</span>

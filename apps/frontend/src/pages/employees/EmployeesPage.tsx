@@ -55,7 +55,7 @@ function EmployeesPage() {
           <Button
             variant="primary"
             onClick={openModal}
-            icon={<Icon name="add" />}
+            icon={<Icon name="ri-add-line" />}
           >
             Add Employee
           </Button>

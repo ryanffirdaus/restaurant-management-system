@@ -174,10 +174,10 @@ export default function AnalyticsPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
         {[
-          { label: 'Total Revenue', value: formatUSD(totalRevenue), icon: 'payments', cls: 'text-primary bg-primary/10' },
-          { label: 'Avg Order Value', value: formatUSD(avgOrderValue), icon: 'show_chart', cls: 'text-blue-400 bg-blue-500/10' },
-          { label: 'Total Orders', value: String(orders.length), icon: 'receipt_long', cls: 'text-orange-400 bg-orange-500/10' },
-          { label: 'Cancellation Rate', value: `${cancelRate}%`, icon: 'cancel', cls: 'text-danger bg-danger/10' },
+          { label: 'Total Revenue', value: formatUSD(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-primary bg-primary/10' },
+          { label: 'Avg Order Value', value: formatUSD(avgOrderValue), icon: 'ri-line-chart-line', cls: 'text-blue-400 bg-blue-500/10' },
+          { label: 'Total Orders', value: String(orders.length), icon: 'ri-bill-line', cls: 'text-orange-400 bg-orange-500/10' },
+          { label: 'Cancellation Rate', value: `${cancelRate}%`, icon: 'ri-close-circle-line', cls: 'text-danger bg-danger/10' },
         ].map(k => (
           <div key={k.label} className="card-bg rounded-2xl border border-outline p-5">
             <div className={`w-9 h-9 rounded-xl ${k.cls} flex items-center justify-center mb-3`}>

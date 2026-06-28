@@ -61,22 +61,38 @@ const availabilityOptions = [
   { value: "unavailable", label: "Unavailable" },
 ];
 
-const categoryVariant: Record<
-  string,
-  "primary" | "warning" | "danger" | "info" | "neutral"
-> = {
-  main: "primary",
-  appetizer: "info",
-  drinks: "primary",
-  dessert: "warning",
-  snacks: "neutral",
-  other: "neutral",
+const CATEGORY_COLOR: Record<string, { bg: string; text: string; border: string }> = {
+  // short keys (from select options)
+  main:       { bg: 'bg-emerald-500/10', text: 'text-emerald-400',  border: 'border-emerald-500/20' },
+  appetizer:  { bg: 'bg-amber-500/10',   text: 'text-amber-400',    border: 'border-amber-500/20' },
+  drinks:     { bg: 'bg-sky-500/10',     text: 'text-sky-400',      border: 'border-sky-500/20' },
+  dessert:    { bg: 'bg-pink-500/10',    text: 'text-pink-400',     border: 'border-pink-500/20' },
+  snacks:     { bg: 'bg-orange-500/10',  text: 'text-orange-400',   border: 'border-orange-500/20' },
+  other:      { bg: 'bg-surface-variant', text: 'text-text-muted',  border: 'border-outline' },
+  // full names (from seeder)
+  'Main Courses':  { bg: 'bg-emerald-500/10', text: 'text-emerald-400',  border: 'border-emerald-500/20' },
+  'Appetizers':    { bg: 'bg-amber-500/10',   text: 'text-amber-400',    border: 'border-amber-500/20' },
+  'Beverages':     { bg: 'bg-sky-500/10',     text: 'text-sky-400',      border: 'border-sky-500/20' },
+  'Desserts':      { bg: 'bg-pink-500/10',    text: 'text-pink-400',     border: 'border-pink-500/20' },
+  'Pizza':         { bg: 'bg-red-500/10',     text: 'text-red-400',      border: 'border-red-500/20' },
+  'Snacks':        { bg: 'bg-orange-500/10',  text: 'text-orange-400',   border: 'border-orange-500/20' },
 };
+
+function CategoryPill({ category }: { category: string | null }) {
+  if (!category) return <span className="text-text-muted text-sm">—</span>
+  const c = CATEGORY_COLOR[category] ?? { bg: 'bg-surface-variant', text: 'text-text-muted', border: 'border-outline' }
+  const label = getCategoryLabel(category)
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-bold ${c.bg} ${c.text} ${c.border}`}>
+      {label}
+    </span>
+  )
+}
 
 type SortKey = "name" | "category" | "price" | "available";
 
 function formatPrice(price: number) {
-  return `$ ${price.toLocaleString("id-ID")}`;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
 }
 
 function getCategoryLabel(value: string | null) {
@@ -308,7 +324,7 @@ export default function MenuPage() {
           ) : (
             <div className="w-9 h-9 rounded-lg bg-surface-variant flex items-center justify-center shrink-0">
               <Icon
-                name="restaurant_menu"
+                name="ri-restaurant-2-line"
                 className="text-base text-text-muted"
               />
             </div>
@@ -329,14 +345,7 @@ export default function MenuPage() {
       label: "Category",
       sortable: true,
       className: "whitespace-nowrap",
-      render: (item) =>
-        item.category ? (
-          <Badge variant={categoryVariant[item.category] ?? "neutral"}>
-            {getCategoryLabel(item.category)}
-          </Badge>
-        ) : (
-          <span className="text-text-muted">—</span>
-        ),
+      render: (item) => <CategoryPill category={item.category} />,
     },
     {
       key: "price",
@@ -373,7 +382,7 @@ export default function MenuPage() {
             title="Detail"
             className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
           >
-            <Icon name="info" className="text-[18px]" />
+            <Icon name="ri-information-line" className="text-[18px]" />
           </button>
           {isAdmin && (
             <>
@@ -382,14 +391,14 @@ export default function MenuPage() {
                 title="Edit"
                 className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
               >
-                <Icon name="edit" className="text-[18px]" />
+                <Icon name="ri-pencil-line" className="text-[18px]" />
               </button>
               <button
                 onClick={() => handleDelete(item)}
                 title="Hapus"
                 className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
               >
-                <Icon name="delete" className="text-[18px]" />
+                <Icon name="ri-delete-bin-6-line" className="text-[18px]" />
               </button>
             </>
           )}
@@ -438,7 +447,7 @@ export default function MenuPage() {
           {isAdmin && (
             <Button
               variant="primary"
-              icon={<Icon name="add" className="text-base" />}
+              icon={<Icon name="ri-add-line" className="text-base" />}
               onClick={openAdd}
             >
               Add Item
@@ -549,32 +558,22 @@ export default function MenuPage() {
               />
             )}
             <MenuInfoRow
-              icon="restaurant_menu"
+              icon="ri-restaurant-2-line"
               label="Name"
               value={infoModal.name}
             />
             <MenuInfoRow
-              icon="notes"
+              icon="ri-file-text-line"
               label="Description"
               value={infoModal.description ?? "—"}
             />
             <MenuInfoRow
-              icon="category"
+              icon="ri-price-tag-3-line"
               label="Category"
-              value={
-                infoModal.category ? (
-                  <Badge
-                    variant={categoryVariant[infoModal.category] ?? "neutral"}
-                  >
-                    {getCategoryLabel(infoModal.category)}
-                  </Badge>
-                ) : (
-                  "—"
-                )
-              }
+              value={<CategoryPill category={infoModal.category} />}
             />
             <MenuInfoRow
-              icon="payments"
+              icon="ri-money-dollar-circle-line"
               label="Price"
               value={
                 <span className="font-semibold text-primary">
@@ -696,7 +695,7 @@ function MenuForm({
       </div>
       {error && (
         <div className="flex items-center gap-2 text-danger text-sm bg-danger/10 border border-danger/20 rounded-xl px-4 py-3">
-          <Icon name="error" className="text-base shrink-0" />
+          <Icon name="ri-error-warning-line" className="text-base shrink-0" />
           {error}
         </div>
       )}
