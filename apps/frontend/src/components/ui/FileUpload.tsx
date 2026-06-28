@@ -59,7 +59,7 @@ export default function FileUpload({
         }`}
       >
         <div className="w-12 h-12 bg-surface-variant rounded-full flex items-center justify-center text-primary mb-4">
-          <Icon name="add" className="text-2xl" />
+          <Icon name="ri-add-line" className="text-2xl" />
         </div>
         <p className="text-sm text-text-main font-medium">Click or drag images here</p>
         <p className="text-xs text-text-muted mt-1">

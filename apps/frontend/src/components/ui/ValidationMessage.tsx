@@ -7,17 +7,17 @@ interface ValidationMessageProps {
 
 const stateStyles: Record<string, { icon: string; textClass: string; bgClass: string }> = {
   valid: {
-    icon: 'check_circle',
+    icon: 'ri-checkbox-circle-line',
     textClass: 'text-primary',
     bgClass: 'bg-primary/20',
   },
   error: {
-    icon: 'error',
+    icon: 'ri-error-warning-line',
     textClass: 'text-danger',
     bgClass: 'bg-danger/20',
   },
   warning: {
-    icon: 'warning',
+    icon: 'ri-alert-line',
     textClass: 'text-warning/80',
     bgClass: 'bg-warning/20',
   },

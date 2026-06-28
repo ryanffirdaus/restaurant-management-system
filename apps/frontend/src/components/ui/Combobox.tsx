@@ -128,7 +128,7 @@ export default function Combobox({
                     >
                       <span className="w-4 h-4 rounded border-2 flex items-center justify-center transition-all shrink-0 bg-background border-outline">
                         {checked && (
-                          <Icon name="check" className="text-[10px] text-primary" filled />
+                          <Icon name="ri-check-line" className="text-[10px] text-primary" filled />
                         )}
                       </span>
                       <span>{opt.label}</span>
