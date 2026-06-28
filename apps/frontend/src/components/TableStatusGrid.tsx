@@ -41,7 +41,7 @@ export default function TableStatusGrid({ tables }: TableStatusGridProps) {
             )
           })}
           <NavLink to="/tables" className="text-primary text-[11px] font-bold uppercase tracking-widest hover:underline flex items-center gap-1">
-            Manage <Icon name="open_in_new" className="text-xs" />
+            Manage <Icon name="ri-external-link-line" className="text-xs" />
           </NavLink>
         </div>
       </div>
@@ -49,7 +49,7 @@ export default function TableStatusGrid({ tables }: TableStatusGridProps) {
       <div className="p-4 overflow-y-auto max-h-[380px] custom-scrollbar">
         {sorted.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-text-muted gap-2">
-            <Icon name="table_bar" className="text-3xl opacity-40" />
+            <Icon name="ri-layout-grid-line" className="text-3xl opacity-40" />
             <p className="text-sm">No tables found</p>
           </div>
         ) : (

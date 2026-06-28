@@ -18,7 +18,7 @@ export default function WelcomeBanner({ name = 'Manager Profile', newOrders = 12
           </p>
         </div>
         <button className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all backdrop-blur-md shrink-0">
-          View Analytics <Icon name="arrow_forward" className="text-sm" />
+          View Analytics <Icon name="ri-arrow-right-line" className="text-sm" />
         </button>
       </div>
     </div>

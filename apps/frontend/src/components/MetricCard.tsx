@@ -18,7 +18,7 @@ export default function MetricCard({ title, value, trend, trendUp, icon, iconCla
         </div>
         {trend && (
           <span className={`text-xs font-bold flex items-center gap-0.5 ${trendUp ? 'text-primary' : 'text-danger'}`}>
-            <Icon name={trendUp ? 'trending_up' : 'trending_down'} className="text-xs" />
+            <Icon name={trendUp ? 'ri-arrow-up-line' : 'ri-arrow-down-line'} className="text-xs" />
             {trend}
           </span>
         )}

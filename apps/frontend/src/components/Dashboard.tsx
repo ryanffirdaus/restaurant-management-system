@@ -105,13 +105,13 @@ export default function Dashboard() {
     {
       title: "Today's Revenue",
       value: loading ? "..." : formatUSD(todayRevenue),
-      icon: "payments",
+      icon: "ri-money-dollar-circle-line",
       iconClass: "text-primary bg-primary/10",
     },
     {
       title: "Total Orders",
       value: loading ? "..." : String(orders.length),
-      icon: "receipt_long",
+      icon: "ri-bill-line",
       iconClass: "text-blue-400 bg-blue-500/10",
     },
     {
@@ -121,13 +121,13 @@ export default function Dashboard() {
         totalTables > 0
           ? `${Math.round((occupied / totalTables) * 100)}% Cap.`
           : undefined,
-      icon: "table_bar",
+      icon: "ri-layout-grid-line",
       iconClass: "text-orange-400 bg-orange-500/10",
     },
     {
       title: "Active Orders",
       value: loading ? "..." : String(activeOrders),
-      icon: "pending_actions",
+      icon: "ri-timer-line",
       iconClass: "text-yellow-400 bg-yellow-500/10",
     },
   ];

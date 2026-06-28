@@ -17,9 +17,9 @@ const statusColors: Record<TableStatus, { bg: string; border: string; text: stri
 }
 
 const statusIcons: Record<TableStatus, string> = {
-  available: 'person',
-  occupied: 'groups',
-  reserved: 'event',
+  available: 'ri-user-line',
+  occupied: 'ri-group-2-line',
+  reserved: 'ri-calendar-line',
 }
 
 export default function TableStatusCard({ number, status, label, icon }: TableStatusCardProps) {

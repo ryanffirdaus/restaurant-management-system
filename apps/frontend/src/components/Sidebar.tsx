@@ -7,24 +7,24 @@ const navGroups = [
   {
     label: 'Main',
     items: [
-      { label: 'Overview', icon: 'grid_view', to: '/' },
-      { label: 'Menu', icon: 'restaurant_menu', to: '/menu' },
-      { label: 'Orders', icon: 'receipt_long', to: '/orders' },
-      { label: 'Tables', icon: 'table_bar', to: '/tables' },
+      { label: 'Overview', icon: 'ri-dashboard-line', to: '/' },
+      { label: 'Menu', icon: 'ri-restaurant-2-line', to: '/menu' },
+      { label: 'Orders', icon: 'ri-bill-line', to: '/orders' },
+      { label: 'Tables', icon: 'ri-layout-grid-line', to: '/tables' },
     ],
   },
   {
     label: 'Management',
     items: [
-      { label: 'Employees', icon: 'group', to: '/employees' },
-      { label: 'Payments', icon: 'payments', to: '/payments' },
-      { label: 'Analytics', icon: 'monitoring', to: '/analytics' },
+      { label: 'Employees', icon: 'ri-group-line', to: '/employees' },
+      { label: 'Payments', icon: 'ri-money-dollar-circle-line', to: '/payments' },
+      { label: 'Analytics', icon: 'ri-bar-chart-box-line', to: '/analytics' },
     ],
   },
   {
     label: 'System',
     items: [
-      { label: 'UI Components', icon: 'widgets', to: '/ui-components' },
+      { label: 'UI Components', icon: 'ri-apps-2-line', to: '/ui-components' },
     ],
   },
 ]
@@ -116,7 +116,7 @@ function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: S
             onClick={toggleTheme}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors"
           >
-            <Icon name={isDark ? 'light_mode' : 'dark_mode'} className="text-xl shrink-0" />
+            <Icon name={isDark ? 'ri-sun-line' : 'ri-moon-line'} className="text-xl shrink-0" />
             <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
           </button>
 
@@ -124,7 +124,7 @@ function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: S
             onClick={logout}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
           >
-            <Icon name="logout" className="text-xl shrink-0" />
+            <Icon name="ri-logout-box-r-line" className="text-xl shrink-0" />
             <span>Logout</span>
           </button>
         </div>

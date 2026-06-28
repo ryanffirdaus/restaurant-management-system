@@ -43,7 +43,7 @@ export default function Modal({
             onClick={onClose}
             className="p-1.5 -mr-1 -mt-0.5 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors"
           >
-            <Icon name="close" className="text-xl" />
+            <Icon name="ri-close-line" className="text-xl" />
           </button>
         </div>
 
