@@ -15,11 +15,10 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 })
 
 const accounts = [
-  { email: 'admin@omni.com', password: 'admin123', name: 'Admin', role: 'admin' as const },
-  { email: 'manager@omni.com', password: 'manager123', name: 'Manager', role: 'manager' as const },
-  { email: 'chef@omni.com', password: 'chef123', name: 'Head Chef', role: 'chef' as const },
-  { email: 'cashier@omni.com', password: 'cashier123', name: 'Cashier', role: 'cashier' as const },
-  { email: 'waiter@omni.com', password: 'waiter123', name: 'Waiter', role: 'waiter' as const },
+  { email: 'admin@omni.com', password: 'admin123', name: 'Admin', salary: 5000, role: 'admin' as const },
+  { email: 'chef@omni.com', password: 'chef123', name: 'Head Chef', salary: 4000, role: 'kitchen' as const },
+  { email: 'cashier@omni.com', password: 'cashier123', name: 'Cashier', salary: 3000, role: 'cashier' as const },
+  { email: 'waiter@omni.com', password: 'waiter123', name: 'Waiter', salary: 2500, role: 'waiter' as const },
 ]
 
 const menuItems = [
@@ -147,11 +146,10 @@ const menuItems = [
 ]
 
 const additionalEmployees = [
-  { name: 'Maria Garcia', role: 'chef' as const, salary: 3500, hire_date: '2024-01-15' },
+  { name: 'Maria Garcia', role: 'kitchen' as const, salary: 3500, hire_date: '2024-01-15' },
   { name: 'John Smith', role: 'waiter' as const, salary: 1800, hire_date: '2024-02-20' },
   { name: 'Sarah Johnson', role: 'waiter' as const, salary: 1800, hire_date: '2024-03-10' },
   { name: 'Michael Brown', role: 'cashier' as const, salary: 2000, hire_date: '2024-01-05' },
-  { name: 'Emma Wilson', role: 'manager' as const, salary: 2800, hire_date: '2023-12-01' },
 ]
 
 async function seedMenuItems(adminUserId: string) {
@@ -276,6 +274,158 @@ async function createProfileAndEmployee(userId: string, acct: typeof accounts[nu
   }
 }
 
+const tables = [
+  { table_number: 1, capacity: 2, status: 'available', notes: 'Window seat' },
+  { table_number: 2, capacity: 4, status: 'occupied', notes: null },
+  { table_number: 3, capacity: 4, status: 'available', notes: null },
+  { table_number: 4, capacity: 6, status: 'reserved', notes: 'Birthday party 19:30' },
+  { table_number: 5, capacity: 2, status: 'occupied', notes: 'Near entrance' },
+  { table_number: 6, capacity: 4, status: 'available', notes: null },
+  { table_number: 7, capacity: 4, status: 'available', notes: null },
+  { table_number: 8, capacity: 8, status: 'occupied', notes: 'Private dining area' },
+  { table_number: 9, capacity: 2, status: 'cleaning', notes: null },
+  { table_number: 10, capacity: 4, status: 'available', notes: null },
+  { table_number: 11, capacity: 4, status: 'occupied', notes: null },
+  { table_number: 12, capacity: 6, status: 'available', notes: 'Patio' },
+  { table_number: 13, capacity: 2, status: 'reserved', notes: 'Anniversary dinner 20:00' },
+  { table_number: 14, capacity: 4, status: 'occupied', notes: null },
+  { table_number: 15, capacity: 4, status: 'available', notes: null },
+  { table_number: 16, capacity: 6, status: 'available', notes: 'Bar adjacent' },
+  { table_number: 17, capacity: 2, status: 'occupied', notes: null },
+  { table_number: 18, capacity: 4, status: 'available', notes: null },
+  { table_number: 19, capacity: 4, status: 'cleaning', notes: null },
+  { table_number: 20, capacity: 10, status: 'available', notes: 'Event room' },
+]
+
+async function seedTables(adminUserId: string) {
+  console.log('\n🪑 Seeding tables...')
+  for (const t of tables) {
+    const { data: existing } = await supabase
+      .from('restaurant_tables')
+      .select('id')
+      .eq('table_number', t.table_number)
+      .is('deleted_at', null)
+      .single()
+
+    if (!existing) {
+      const { error } = await supabase.from('restaurant_tables').insert({
+        ...t,
+        created_by: adminUserId,
+        updated_by: adminUserId,
+      })
+      if (error) {
+        console.error(`  ✗  Table ${t.table_number} — ${error.message}`)
+      } else {
+        console.log(`  ✓  Table ${t.table_number} — created (${t.status}, ${t.capacity} seats)`)
+      }
+    } else {
+      console.log(`  ⏭  Table ${t.table_number} — already exists`)
+    }
+  }
+}
+
+async function seedOrders(adminUserId: string) {
+  console.log('\n🧾 Seeding orders...')
+
+  // Fetch created tables and menu items
+  const { data: tableRows } = await supabase
+    .from('restaurant_tables')
+    .select('id, table_number')
+    .is('deleted_at', null)
+    .order('table_number')
+
+  const { data: menuRows } = await supabase
+    .from('menu_items')
+    .select('id, name, price')
+    .eq('available', true)
+    .is('deleted_at', null)
+
+  if (!tableRows || tableRows.length === 0 || !menuRows || menuRows.length === 0) {
+    console.log('  ⚠  No tables or menu items found — skipping orders')
+    return
+  }
+
+  // Check if orders already exist
+  const { data: existingOrders } = await supabase
+    .from('orders')
+    .select('id')
+    .is('deleted_at', null)
+    .limit(1)
+
+  if (existingOrders && existingOrders.length > 0) {
+    console.log('  ⏭  Orders already exist — skipping')
+    return
+  }
+
+  function pick<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)] }
+  function pickN<T>(arr: T[], n: number): T[] {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5)
+    return shuffled.slice(0, n)
+  }
+
+  const orderTemplates = [
+    { status: 'completed', customerName: 'Dine-in', hoursAgo: 3 },
+    { status: 'completed', customerName: 'Dine-in', hoursAgo: 2.5 },
+    { status: 'completed', customerName: 'Takeaway', hoursAgo: 2 },
+    { status: 'completed', customerName: 'Dine-in', hoursAgo: 1.5 },
+    { status: 'completed', customerName: 'Dine-in', hoursAgo: 1 },
+    { status: 'preparing', customerName: 'Dine-in', hoursAgo: 0.3 },
+    { status: 'preparing', customerName: 'Dine-in', hoursAgo: 0.2 },
+    { status: 'pending', customerName: 'Dine-in', hoursAgo: 0.05 },
+    { status: 'pending', customerName: 'Takeaway', hoursAgo: 0.03 },
+    { status: 'ready', customerName: 'Dine-in', hoursAgo: 0.1 },
+    { status: 'cancelled', customerName: 'Dine-in', hoursAgo: 1.8 },
+    { status: 'completed', customerName: 'Dine-in', hoursAgo: 4 },
+  ]
+
+  for (const tmpl of orderTemplates) {
+    const tableRow = tmpl.customerName === 'Takeaway' ? null : pick(tableRows)
+    const selectedItems = pickN(menuRows, Math.floor(Math.random() * 3) + 1)
+    const quantities = selectedItems.map(() => Math.floor(Math.random() * 2) + 1)
+    const totalPrice = selectedItems.reduce((sum, item, i) => sum + item.price * quantities[i], 0)
+    const createdAt = new Date(Date.now() - tmpl.hoursAgo * 3600 * 1000).toISOString()
+
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .insert({
+        user_id: adminUserId,
+        customer_name: tmpl.customerName,
+        status: tmpl.status,
+        total_price: parseFloat(totalPrice.toFixed(2)),
+        table_id: tableRow?.id ?? null,
+        created_by: adminUserId,
+        updated_by: adminUserId,
+        created_at: createdAt,
+        updated_at: createdAt,
+      })
+      .select()
+      .single()
+
+    if (orderError || !order) {
+      console.error(`  ✗  Order — ${orderError?.message}`)
+      continue
+    }
+
+    const orderItems = selectedItems.map((item, i) => ({
+      order_id: order.id,
+      menu_item_id: item.id,
+      quantity: quantities[i],
+      price_at_purchase: item.price,
+      created_by: adminUserId,
+      updated_by: adminUserId,
+    }))
+
+    const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
+    if (itemsError) {
+      console.error(`  ✗  Order items — ${itemsError.message}`)
+    } else {
+      const itemNames = selectedItems.map((it, i) => `${quantities[i]}x ${it.name}`).join(', ')
+      const table = tableRow ? `Table ${tableRow.table_number}` : 'Takeaway'
+      console.log(`  ✓  [${tmpl.status}] ${table} — ${itemNames} ($${totalPrice.toFixed(2)})`)
+    }
+  }
+}
+
 async function seed() {
   if (!supabaseServiceKey || supabaseServiceKey === 'your_service_role_key_here') {
     console.error('ERROR: Set SUPABASE_SERVICE_ROLE_KEY in .env first!')
@@ -307,10 +457,18 @@ async function seed() {
     await ensureUser(acct)
   }
 
-  // Seed additional data if we have an admin
+  // Resolve admin user ID after ensureUser calls
+  if (!adminUserId) {
+    const { data: refreshed } = await supabase.auth.admin.listUsers()
+    const found = refreshed.users.find((u) => u.email === accounts[0].email)
+    if (found) adminUserId = found.id
+  }
+
   if (adminUserId) {
     await seedMenuItems(adminUserId)
     await seedAdditionalEmployees(adminUserId, userIds)
+    await seedTables(adminUserId)
+    await seedOrders(adminUserId)
   }
 
   console.log('\n✅ Database seeding completed!')
