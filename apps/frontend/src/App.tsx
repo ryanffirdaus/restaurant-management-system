@@ -7,6 +7,8 @@ import UIComponentsPage from "./pages/ui-components/UIComponentsPage";
 import MenuPage from "./pages/MenuPage";
 import OrdersPage from "./pages/orders/OrdersPage";
 import TablesPage from "./pages/tables/TablesPage";
+import PaymentsPage from "./pages/payments/PaymentsPage";
+import AnalyticsPage from "./pages/analytics/AnalyticsPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 import TopAppBar from "./components/TopAppBar";
@@ -104,6 +106,8 @@ function App() {
         <Route path="menu" element={<MenuPage />} />
         <Route path="orders" element={<OrdersPage />} />
         <Route path="tables" element={<TablesPage />} />
+        <Route path="payments" element={<PaymentsPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="ui-components" element={<UIComponentsPage />} />
       </Route>
