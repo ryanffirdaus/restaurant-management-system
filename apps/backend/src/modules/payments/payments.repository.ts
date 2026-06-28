@@ -3,6 +3,15 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Payment, PaymentInput } from './payments.types.js'
 import type { Order } from '../orders/orders.types.js'
 
+export async function getAllPayments(client?: SupabaseClient): Promise<Payment[]> {
+  const { data, error } = await db(client)
+    .from('payments')
+    .select('*, order:order_id(id, total_price, table_id, status, customer_name)')
+    .order('paid_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
 export async function getPaymentsByOrder(orderId: string, client?: SupabaseClient): Promise<Payment[]> {
   const { data, error } = await db(client)
     .from('payments')

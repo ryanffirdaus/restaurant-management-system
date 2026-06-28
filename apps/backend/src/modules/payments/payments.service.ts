@@ -6,6 +6,10 @@ import { AppError } from '../../shared/errors/AppError.js'
 
 const VALID_METHODS: PaymentMethod[] = ['cash', 'debit_card', 'credit_card', 'qris', 'other']
 
+export async function getAll(client?: SupabaseClient): Promise<Payment[]> {
+  return repo.getAllPayments(client)
+}
+
 export async function getByOrder(orderId: string, client?: SupabaseClient): Promise<Payment[]> {
   return repo.getPaymentsByOrder(orderId, client)
 }
