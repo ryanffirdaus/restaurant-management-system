@@ -7,7 +7,7 @@ import { getMenuItem } from '../menus/menus.repository.js'
 export async function getOrders(client?: SupabaseClient): Promise<Order[]> {
   const { data, error } = await db(client)
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*, menu_item:menu_item_id(name, image_url))')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -17,7 +17,7 @@ export async function getOrders(client?: SupabaseClient): Promise<Order[]> {
 export async function getOrder(id: string, client?: SupabaseClient): Promise<Order> {
   const { data, error } = await db(client)
     .from('orders')
-    .select('*, order_items(*)')
+    .select('*, order_items(*, menu_item:menu_item_id(name, image_url))')
     .eq('id', id)
     .is('deleted_at', null)
     .single()
