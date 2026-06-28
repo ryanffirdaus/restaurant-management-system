@@ -1,20 +1,23 @@
-import type { InputHTMLAttributes } from 'react'
-import Icon from '../Icon'
+import type { InputHTMLAttributes } from "react";
+import Icon from "../Icon";
 
-interface SearchBarProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
-  value?: string
-  onChange?: (value: string) => void
-  label?: string
-  hint?: string
+interface SearchBarProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "onChange"
+> {
+  value?: string;
+  onChange?: (value: string) => void;
+  label?: string;
+  hint?: string;
 }
 
 export default function SearchBar({
-  value = '',
+  value = "",
   onChange,
   label,
   hint,
-  placeholder = 'Search...',
-  className = '',
+  placeholder = "Search...",
+  className = "",
   disabled,
   ...rest
 }: SearchBarProps) {
@@ -23,7 +26,11 @@ export default function SearchBar({
       {label && (
         <label className="block text-sm font-medium text-text-muted">
           {label}
-          {hint && <span className="text-text-muted ml-1 text-xs opacity-60">({hint})</span>}
+          {hint && (
+            <span className="text-text-muted ml-1 text-xs opacity-60">
+              ({hint})
+            </span>
+          )}
         </label>
       )}
       <div className="relative w-full">
@@ -33,7 +40,9 @@ export default function SearchBar({
         />
         <input
           className={`w-full bg-background border border-outline rounded-xl pl-10 pr-4 py-3 text-text-main placeholder:text-text-muted/40 focus:border-primary/50 focus:ring-0 transition-all ${
-            disabled ? 'opacity-50 cursor-not-allowed bg-surface-variant/50' : ''
+            disabled
+              ? "opacity-50 cursor-not-allowed bg-surface-variant/50"
+              : ""
           } ${className}`}
           placeholder={placeholder}
           type="text"
@@ -44,5 +53,5 @@ export default function SearchBar({
         />
       </div>
     </div>
-  )
+  );
 }

@@ -9,7 +9,14 @@ import Card from "../components/Card";
 import Icon from "../components/Icon";
 import SearchInput from "../components/SearchInput";
 import Modal from "../components/Modal";
-import { Button, TextInput, Textarea, Select, Toggle } from "../components/ui";
+import {
+  Button,
+  TextInput,
+  Textarea,
+  Select,
+  Toggle,
+  SearchBar,
+} from "../components/ui";
 import type { LayoutContext } from "../App";
 
 interface MenuItem {
@@ -61,38 +68,98 @@ const availabilityOptions = [
   { value: "unavailable", label: "Unavailable" },
 ];
 
-const CATEGORY_COLOR: Record<string, { bg: string; text: string; border: string }> = {
+const CATEGORY_COLOR: Record<
+  string,
+  { bg: string; text: string; border: string }
+> = {
   // short keys (from select options)
-  main:       { bg: 'bg-emerald-500/10', text: 'text-emerald-400',  border: 'border-emerald-500/20' },
-  appetizer:  { bg: 'bg-amber-500/10',   text: 'text-amber-400',    border: 'border-amber-500/20' },
-  drinks:     { bg: 'bg-sky-500/10',     text: 'text-sky-400',      border: 'border-sky-500/20' },
-  dessert:    { bg: 'bg-pink-500/10',    text: 'text-pink-400',     border: 'border-pink-500/20' },
-  snacks:     { bg: 'bg-orange-500/10',  text: 'text-orange-400',   border: 'border-orange-500/20' },
-  other:      { bg: 'bg-surface-variant', text: 'text-text-muted',  border: 'border-outline' },
+  main: {
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-400",
+    border: "border-emerald-500/20",
+  },
+  appetizer: {
+    bg: "bg-amber-500/10",
+    text: "text-amber-400",
+    border: "border-amber-500/20",
+  },
+  drinks: {
+    bg: "bg-sky-500/10",
+    text: "text-sky-400",
+    border: "border-sky-500/20",
+  },
+  dessert: {
+    bg: "bg-pink-500/10",
+    text: "text-pink-400",
+    border: "border-pink-500/20",
+  },
+  snacks: {
+    bg: "bg-orange-500/10",
+    text: "text-orange-400",
+    border: "border-orange-500/20",
+  },
+  other: {
+    bg: "bg-surface-variant",
+    text: "text-text-muted",
+    border: "border-outline",
+  },
   // full names (from seeder)
-  'Main Courses':  { bg: 'bg-emerald-500/10', text: 'text-emerald-400',  border: 'border-emerald-500/20' },
-  'Appetizers':    { bg: 'bg-amber-500/10',   text: 'text-amber-400',    border: 'border-amber-500/20' },
-  'Beverages':     { bg: 'bg-sky-500/10',     text: 'text-sky-400',      border: 'border-sky-500/20' },
-  'Desserts':      { bg: 'bg-pink-500/10',    text: 'text-pink-400',     border: 'border-pink-500/20' },
-  'Pizza':         { bg: 'bg-red-500/10',     text: 'text-red-400',      border: 'border-red-500/20' },
-  'Snacks':        { bg: 'bg-orange-500/10',  text: 'text-orange-400',   border: 'border-orange-500/20' },
+  "Main Courses": {
+    bg: "bg-emerald-500/10",
+    text: "text-emerald-400",
+    border: "border-emerald-500/20",
+  },
+  Appetizers: {
+    bg: "bg-amber-500/10",
+    text: "text-amber-400",
+    border: "border-amber-500/20",
+  },
+  Beverages: {
+    bg: "bg-sky-500/10",
+    text: "text-sky-400",
+    border: "border-sky-500/20",
+  },
+  Desserts: {
+    bg: "bg-pink-500/10",
+    text: "text-pink-400",
+    border: "border-pink-500/20",
+  },
+  Pizza: {
+    bg: "bg-red-500/10",
+    text: "text-red-400",
+    border: "border-red-500/20",
+  },
+  Snacks: {
+    bg: "bg-orange-500/10",
+    text: "text-orange-400",
+    border: "border-orange-500/20",
+  },
 };
 
 function CategoryPill({ category }: { category: string | null }) {
-  if (!category) return <span className="text-text-muted text-sm">—</span>
-  const c = CATEGORY_COLOR[category] ?? { bg: 'bg-surface-variant', text: 'text-text-muted', border: 'border-outline' }
-  const label = getCategoryLabel(category)
+  if (!category) return <span className="text-text-muted text-sm">—</span>;
+  const c = CATEGORY_COLOR[category] ?? {
+    bg: "bg-surface-variant",
+    text: "text-text-muted",
+    border: "border-outline",
+  };
+  const label = getCategoryLabel(category);
   return (
-    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-bold ${c.bg} ${c.text} ${c.border}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-bold ${c.bg} ${c.text} ${c.border}`}
+    >
       {label}
     </span>
-  )
+  );
 }
 
 type SortKey = "name" | "category" | "price" | "available";
 
 function formatPrice(price: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price);
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(price);
 }
 
 function getCategoryLabel(value: string | null) {
@@ -456,7 +523,7 @@ export default function MenuPage() {
         </header>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <SearchInput
+          <SearchBar
             value={search}
             onChange={setSearch}
             placeholder="Search by name or description..."
