@@ -25,7 +25,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (res.ok) {
-        const data = await res.json()
+        const json = await res.json()
+        // Support both envelope { success, data: {...} } and flat response
+        const data = json?.data ?? json
         setState((prev) => ({
           ...prev,
           profile: data.profile,
