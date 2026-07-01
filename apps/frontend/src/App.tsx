@@ -11,6 +11,7 @@ import PaymentsPage from "./pages/payments/PaymentsPage";
 import AnalyticsPage from "./pages/analytics/AnalyticsPage";
 import WaiterApp from "./pages/waiter/WaiterApp";
 import KitchenApp from "./pages/kitchen/KitchenApp";
+import CashierApp from "./pages/cashier/CashierApp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 import TopAppBar from "./components/TopAppBar";
@@ -94,6 +95,14 @@ function RoleRouter() {
     return (
       <Routes>
         <Route path="*" element={<KitchenApp />} />
+      </Routes>
+    );
+  }
+
+  if (employeeRole === "cashier") {
+    return (
+      <Routes>
+        <Route path="*" element={<CashierApp />} />
       </Routes>
     );
   }
