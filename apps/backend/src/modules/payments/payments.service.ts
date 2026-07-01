@@ -7,6 +7,7 @@ import { AppError } from '../../shared/errors/AppError.js'
 const VALID_METHODS: PaymentMethod[] = ['cash', 'debit_card', 'credit_card', 'qris', 'other']
 
 export async function getAll(client?: SupabaseClient): Promise<Payment[]> {
+  // No client arg = service role, bypasses RLS
   return repo.getAllPayments(client)
 }
 
