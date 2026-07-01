@@ -23,11 +23,14 @@ interface MenuItem {
   available: boolean
 }
 
+type ItemStatus = 'pending' | 'preparing' | 'ready'
+
 interface OrderItem {
   id: string
   menu_item_id: string
   quantity: number
   price_at_purchase: number
+  item_status: ItemStatus
   menu_item?: { name: string }
 }
 
@@ -109,8 +112,10 @@ function TableCard({ table, activeOrders, onClick }: {
   onClick: () => void
 }) {
   const s = tableStyle(table.status)
-  const preparingCount = activeOrders.filter(o => o.status === 'pending' || o.status === 'preparing').length
-  const readyCount = activeOrders.filter(o => o.status === 'ready').length
+  // Count at item level for accurate badges
+  const allItems = activeOrders.flatMap(o => o.order_items ?? [])
+  const readyCount = allItems.filter(i => i.item_status === 'ready').length
+  const cookingCount = allItems.filter(i => i.item_status === 'preparing').length
   const hasAlert = readyCount > 0
 
   return (
@@ -144,13 +149,13 @@ function TableCard({ table, activeOrders, onClick }: {
             {readyCount} ready
           </span>
         )}
-        {preparingCount > 0 && (
+        {cookingCount > 0 && (
           <span className="flex items-center gap-0.5 text-[10px] font-bold text-orange-400 bg-orange-500/15 px-1.5 py-0.5 rounded-md leading-none">
-            <Icon name="ri-timer-line" className="text-[10px]" />
-            {preparingCount}
+            <Icon name="ri-restaurant-line" className="text-[10px]" />
+            {cookingCount} cooking
           </span>
         )}
-        {!readyCount && !preparingCount && (
+        {!readyCount && !cookingCount && (
           <span className={`flex items-center gap-1 text-[10px] font-bold ${s.dotLabel}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
             {s.label}
@@ -161,27 +166,43 @@ function TableCard({ table, activeOrders, onClick }: {
   )
 }
 
+// ─── Item status badge ────────────────────────────────────────────────────────
+
+function ItemStatusDot({ status }: { status: ItemStatus }) {
+  const map: Record<ItemStatus, { dot: string; label: string; text: string }> = {
+    pending:   { dot: 'bg-text-muted',  label: 'Queued',  text: 'text-text-muted' },
+    preparing: { dot: 'bg-orange-400',  label: 'Cooking', text: 'text-orange-400' },
+    ready:     { dot: 'bg-primary',     label: 'Ready',   text: 'text-primary' },
+  }
+  const s = map[status]
+  return (
+    <span className={`flex items-center gap-1 text-[10px] font-bold ${s.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot} ${status === 'ready' ? 'animate-pulse' : ''}`} />
+      {s.label}
+    </span>
+  )
+}
+
 // ─── Order Card (in session panel) ───────────────────────────────────────────
 
 function OrderCard({ order, onStatusChange }: {
   order: Order
   onStatusChange: (id: string, status: string) => void
 }) {
-  const waiterAction = WAITER_ACTION[order.status] ?? null
-  const statusInfo = STATUS_INFO[order.status] ?? null
   const [loading, setLoading] = useState(false)
 
+  const items = order.order_items ?? []
+  const allReady = items.length > 0 && items.every(i => i.item_status === 'ready')
+  const anyReady = items.some(i => i.item_status === 'ready')
+
+  // Derive a visual accent from items collectively
+  const accentBar = allReady ? 'bg-primary' : anyReady ? 'bg-primary/40' : order.status === 'pending' ? 'bg-text-muted/25' : 'bg-orange-400'
+
   async function markServed() {
-    if (!waiterAction) return
     setLoading(true)
-    await onStatusChange(order.id, waiterAction.status)
+    await onStatusChange(order.id, 'completed')
     setLoading(false)
   }
-
-  const accentBar =
-    order.status === 'pending'   ? 'bg-text-muted/25' :
-    order.status === 'preparing' ? 'bg-orange-400' :
-    order.status === 'ready'     ? 'bg-primary' : 'bg-blue-400'
 
   return (
     <div className="card-bg rounded-2xl border border-outline overflow-hidden">
@@ -196,17 +217,27 @@ function OrderCard({ order, onStatusChange }: {
           <StatusPill status={order.status} />
         </div>
 
-        {/* Items */}
-        <div className="space-y-1.5">
-          {(order.order_items ?? []).map(item => (
-            <div key={item.id} className="flex justify-between items-center">
-              <span className="text-sm text-text-main">
-                <span className="font-bold">{item.quantity}×</span>{' '}
+        {/* Per-item rows with individual status */}
+        <div className="space-y-2">
+          {items.map(item => (
+            <div key={item.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${
+              item.item_status === 'ready' ? 'bg-primary/8 border border-primary/20' :
+              item.item_status === 'preparing' ? 'bg-orange-500/8 border border-orange-400/20' :
+              'bg-surface-variant border border-transparent'
+            }`}>
+              <span className={`font-black text-base w-6 text-center shrink-0 ${
+                item.item_status === 'ready' ? 'text-primary' :
+                item.item_status === 'preparing' ? 'text-orange-400' : 'text-text-muted'
+              }`}>{item.quantity}</span>
+              <span className="text-sm text-text-main flex-1 min-w-0 truncate">
                 {item.menu_item?.name ?? '?'}
               </span>
-              <span className="text-xs text-text-muted tabular-nums ml-2 shrink-0">
-                {formatUSD(item.quantity * item.price_at_purchase)}
-              </span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-text-muted tabular-nums">
+                  {formatUSD(item.quantity * item.price_at_purchase)}
+                </span>
+                <ItemStatusDot status={item.item_status ?? 'pending'} />
+              </div>
             </div>
           ))}
         </div>
@@ -227,35 +258,36 @@ function OrderCard({ order, onStatusChange }: {
           <span>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
 
-        {/* Kitchen status info (pending/preparing — waiter cannot advance these) */}
-        {statusInfo && (
-          <div className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold ${statusInfo.cls}`}>
-            <Icon name={statusInfo.icon} className="text-sm shrink-0" />
-            <span>{statusInfo.label}</span>
-            {order.status === 'pending' && (
-              <button
-                onClick={() => onStatusChange(order.id, 'cancelled')}
-                className="ml-auto text-danger font-bold flex items-center gap-1 touch-manipulation"
-              >
-                <Icon name="ri-close-line" className="text-sm" />
-                Cancel
-              </button>
-            )}
-          </div>
+        {/* Cancel (only while pending — no items started yet) */}
+        {order.status === 'pending' && items.every(i => i.item_status === 'pending') && (
+          <button
+            onClick={() => onStatusChange(order.id, 'cancelled')}
+            className="flex items-center gap-1.5 text-danger text-xs font-bold touch-manipulation self-start"
+          >
+            <Icon name="ri-close-circle-line" className="text-sm" />Cancel order
+          </button>
         )}
 
-        {/* Waiter action: only "Mark Served" when ready */}
-        {waiterAction && (
+        {/* Mark Served — only when ALL items are ready */}
+        {allReady && (
           <button
             onClick={markServed}
             disabled={loading}
-            className={`w-full py-3.5 rounded-xl text-sm font-bold border transition-colors active:scale-[0.98] touch-manipulation ${waiterAction.cls}`}
+            className="w-full py-3.5 rounded-xl text-sm font-bold border border-blue-400/30 bg-blue-500/15 text-blue-400 transition-colors active:scale-[0.98] touch-manipulation"
           >
             {loading
               ? <span className="flex items-center justify-center gap-2"><Icon name="ri-loader-4-line" className="animate-spin" /> Updating…</span>
-              : <span className="flex items-center justify-center gap-2"><Icon name="ri-service-line" className="text-base" />{waiterAction.label}</span>
+              : <span className="flex items-center justify-center gap-2"><Icon name="ri-service-line" className="text-base" />Mark Served</span>
             }
           </button>
+        )}
+
+        {/* Partial ready prompt */}
+        {!allReady && anyReady && (
+          <div className="flex items-center gap-2 text-xs text-text-muted bg-surface-variant rounded-xl px-3 py-2.5">
+            <Icon name="ri-time-line" className="text-sm shrink-0" />
+            Some items ready — waiting for rest from kitchen
+          </div>
         )}
       </div>
     </div>
@@ -609,7 +641,7 @@ export default function WaiterApp() {
 
   useEffect(() => { fetchAll(true) }, [fetchAll])
   useEffect(() => {
-    const t = setInterval(() => fetchAll(true), 30_000)
+    const t = setInterval(() => fetchAll(true), 10_000)
     return () => clearInterval(t)
   }, [fetchAll])
 
@@ -620,13 +652,17 @@ export default function WaiterApp() {
   const filtered = (filterStatus === 'all' ? tables : tables.filter(t => t.status === filterStatus))
     .slice()
     .sort((a, b) => {
-      const ar = getTableOrders(a.id).filter(o => o.status === 'ready').length
-      const br = getTableOrders(b.id).filter(o => o.status === 'ready').length
+      // Sort by tables that have ready items first
+      const allItemsA = getTableOrders(a.id).flatMap(o => o.order_items ?? [])
+      const allItemsB = getTableOrders(b.id).flatMap(o => o.order_items ?? [])
+      const ar = allItemsA.filter(i => i.item_status === 'ready').length
+      const br = allItemsB.filter(i => i.item_status === 'ready').length
       if (br !== ar) return br - ar
       return a.table_number - b.table_number
     })
 
-  const readyCount = allOrders.filter(o => o.status === 'ready').length
+  const allActiveItems = allOrders.flatMap(o => o.order_items ?? [])
+  const readyCount = allActiveItems.filter(i => i.item_status === 'ready').length
   const activeCount = allOrders.filter(o => o.status === 'pending' || o.status === 'preparing').length
 
   const STATUS_FILTERS = [
