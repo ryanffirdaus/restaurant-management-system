@@ -76,6 +76,17 @@ export async function updateOrderStatus(id: string, status: string, client?: Sup
   return data
 }
 
+export async function updateOrderItemStatus(
+  itemId: string,
+  itemStatus: string,
+): Promise<void> {
+  const { error } = await db()
+    .from('order_items')
+    .update({ item_status: itemStatus })
+    .eq('id', itemId)
+  if (error) throw error
+}
+
 export async function softDeleteOrder(id: string, client?: SupabaseClient): Promise<void> {
   const { error } = await db(client)
     .from('orders')

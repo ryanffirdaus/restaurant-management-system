@@ -3,8 +3,7 @@ import type { AuthenticatedRequest } from '../../shared/types/auth.js'
 import { ok, created, noContent } from '../../shared/utils/response.js'
 import * as orderService from './orders.service.js'
 
-export async function getAll(req: AuthenticatedRequest, res: Response) {
-  // Use service-role client (no arg) so Supabase RLS does not filter by user_id
+export async function getAll(_req: AuthenticatedRequest, res: Response) {
   const orders = await orderService.getAll()
   ok(res, orders, 'Orders fetched')
 }
@@ -25,10 +24,15 @@ export async function create(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function updateStatus(req: AuthenticatedRequest, res: Response) {
-  // No userClient — use service role so any authenticated user (kitchen, waiter)
-  // can update status regardless of who created the order (RLS would block cross-user updates)
+  // Service role — any authenticated user (kitchen/waiter) can change status
   const order = await orderService.updateStatus(req.params.id as string, req.body.status)
   ok(res, order, 'Order status updated')
+}
+
+export async function updateItemStatus(req: AuthenticatedRequest, res: Response) {
+  // Per-item status (pending → preparing → ready), used by kitchen
+  await orderService.updateItemStatus(req.params.itemId as string, req.body.item_status)
+  ok(res, null, 'Item status updated')
 }
 
 export async function remove(req: AuthenticatedRequest, res: Response) {

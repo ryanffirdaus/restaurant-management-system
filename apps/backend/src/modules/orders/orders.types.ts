@@ -1,4 +1,5 @@
 export type OrderStatus = 'pending' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+export type ItemStatus = 'pending' | 'preparing' | 'ready'
 
 export interface Order {
   id: string
@@ -33,6 +34,7 @@ export interface OrderItem {
   menu_item_id: string
   quantity: number
   price_at_purchase: number
+  item_status: ItemStatus
   created_at: string
   created_by: string | null
   updated_at: string
