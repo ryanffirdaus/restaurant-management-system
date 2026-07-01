@@ -9,13 +9,18 @@ import orderRoutes from './modules/orders/orders.routes.js'
 import tableRoutes from './modules/tables/tables.routes.js'
 import profileRoutes from './modules/profiles/profiles.routes.js'
 import paymentRoutes from './modules/payments/payments.routes.js'
-import stripeRoutes, { stripeWebhook } from './modules/payments/payments.stripe.routes.js'
+import dokuRoutes, { dokuWebhook } from './modules/payments/payments.doku.routes.js'
 import { errorHandler } from './middleware/error-handler.js'
 
 const app = express()
 
-// Stripe webhook needs raw body for signature verification
-app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook)
+// DOKU webhook needs raw body for HMAC signature verification
+app.post(
+  '/api/doku/webhook',
+  express.raw({ type: 'application/json' }),
+  (req, _res, next) => { (req as any).rawBody = (req.body as Buffer).toString('utf8'); next() },
+  (req, res) => dokuWebhook(req, res),
+)
 
 app.use(cors())
 app.use(express.json())
@@ -35,7 +40,7 @@ app.use('/api/tables', tableRoutes)
 app.use('/api/employees', employeeRoutes)
 app.use('/api/profiles', profileRoutes)
 app.use('/api/payments', paymentRoutes)
-app.use('/api/stripe', stripeRoutes)
+app.use('/api/doku', dokuRoutes)
 
 app.use(errorHandler)
 
