@@ -9,6 +9,8 @@ import OrdersPage from "./pages/orders/OrdersPage";
 import TablesPage from "./pages/tables/TablesPage";
 import PaymentsPage from "./pages/payments/PaymentsPage";
 import AnalyticsPage from "./pages/analytics/AnalyticsPage";
+import WaiterApp from "./pages/waiter/WaiterApp";
+import KitchenApp from "./pages/kitchen/KitchenApp";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Sidebar from "./components/Sidebar";
 import TopAppBar from "./components/TopAppBar";
@@ -77,6 +79,42 @@ function DashboardLayout() {
   );
 }
 
+function RoleRouter() {
+  const { employeeRole } = useAuth();
+
+  if (employeeRole === "waiter") {
+    return (
+      <Routes>
+        <Route path="*" element={<WaiterApp />} />
+      </Routes>
+    );
+  }
+
+  if (employeeRole === "kitchen") {
+    return (
+      <Routes>
+        <Route path="*" element={<KitchenApp />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<DashboardLayout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="menu" element={<MenuPage />} />
+        <Route path="orders" element={<OrdersPage />} />
+        <Route path="tables" element={<TablesPage />} />
+        <Route path="payments" element={<PaymentsPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
+        <Route path="employees" element={<EmployeesPage />} />
+        <Route path="ui-components" element={<UIComponentsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
 function App() {
   const { user, loading } = useAuth();
 
@@ -95,23 +133,13 @@ function App() {
         element={user ? <Navigate to="/" replace /> : <LoginPage />}
       />
       <Route
-        path="/"
+        path="/*"
         element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <RoleRouter />
           </ProtectedRoute>
         }
-      >
-        <Route index element={<Dashboard />} />
-        <Route path="menu" element={<MenuPage />} />
-        <Route path="orders" element={<OrdersPage />} />
-        <Route path="tables" element={<TablesPage />} />
-        <Route path="payments" element={<PaymentsPage />} />
-        <Route path="analytics" element={<AnalyticsPage />} />
-        <Route path="employees" element={<EmployeesPage />} />
-        <Route path="ui-components" element={<UIComponentsPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      />
     </Routes>
   );
 }
