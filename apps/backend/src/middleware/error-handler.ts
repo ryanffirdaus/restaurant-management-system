@@ -8,8 +8,16 @@ export function errorHandler(
   _next: NextFunction
 ) {
   if (err instanceof AppError) {
-    return res.status(err.statusCode).json({ error: err.message })
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      data: null,
+    })
   }
-  console.error('[ERROR]', err.message)
-  res.status(500).json({ error: err.message })
+  console.error('[ERROR]', err.message, err.stack)
+  return res.status(500).json({
+    success: false,
+    message: err.message ?? 'Internal server error',
+    data: null,
+  })
 }

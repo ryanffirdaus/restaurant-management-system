@@ -13,20 +13,24 @@ async function resolveUser(req: AuthenticatedRequest, token: string) {
   return true
 }
 
+function unauthorized(res: Response, message = 'Missing or invalid authorization header') {
+  return res.status(401).json({ success: false, message, data: null })
+}
+
+function forbidden(res: Response, message = 'Forbidden') {
+  return res.status(403).json({ success: false, message, data: null })
+}
+
 export async function requireAuth(
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ) {
   const header = req.headers.authorization
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid authorization header' })
-  }
+  if (!header?.startsWith('Bearer ')) return unauthorized(res)
 
   const ok = await resolveUser(req, header.slice(7))
-  if (!ok) {
-    return res.status(401).json({ error: 'Invalid or expired token' })
-  }
+  if (!ok) return unauthorized(res, 'Invalid or expired token')
 
   next()
 }
@@ -37,12 +41,7 @@ export async function optionalAuth(
   next: NextFunction
 ) {
   const header = req.headers.authorization
-  if (!header?.startsWith('Bearer ')) {
-    next()
-    return
-  }
-
-  await resolveUser(req, header.slice(7))
+  if (header?.startsWith('Bearer ')) await resolveUser(req, header.slice(7))
   next()
 }
 
@@ -52,18 +51,11 @@ export async function requireAdmin(
   next: NextFunction
 ) {
   const header = req.headers.authorization
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Missing or invalid authorization header' })
-  }
+  if (!header?.startsWith('Bearer ')) return unauthorized(res)
 
   const ok = await resolveUser(req, header.slice(7))
-  if (!ok) {
-    return res.status(401).json({ error: 'Invalid or expired token' })
-  }
-
-  if (req.userRole !== 'admin') {
-    return res.status(403).json({ error: 'Admin access required' })
-  }
+  if (!ok) return unauthorized(res, 'Invalid or expired token')
+  if (req.userRole !== 'admin') return forbidden(res, 'Admin access required')
 
   next()
 }
