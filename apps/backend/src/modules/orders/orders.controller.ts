@@ -1,38 +1,37 @@
 import type { Response } from 'express'
 import type { AuthenticatedRequest } from '../../shared/types/auth.js'
+import { ok, created, noContent } from '../../shared/utils/response.js'
 import * as orderService from './orders.service.js'
 
 export async function getAll(req: AuthenticatedRequest, res: Response) {
-  const orders = await orderService.getAll(req.userClient)
-  res.json(orders)
+  // Use service-role client (no arg) so Supabase RLS does not filter by user_id
+  const orders = await orderService.getAll()
+  ok(res, orders, 'Orders fetched')
 }
 
 export async function getMyOrders(req: AuthenticatedRequest, res: Response) {
   const orders = await orderService.getByUser(req.userId!, req.userClient)
-  res.json(orders)
+  ok(res, orders, 'Orders fetched')
 }
 
 export async function getById(req: AuthenticatedRequest, res: Response) {
-  const id = req.params.id as string
-  const order = await orderService.getById(id, req.userClient)
-  res.json(order)
+  const order = await orderService.getById(req.params.id as string)
+  ok(res, order, 'Order fetched')
 }
 
 export async function create(req: AuthenticatedRequest, res: Response) {
-  const input = req.body
-  const order = await orderService.create(input, req.userClient)
-  res.status(201).json(order)
+  const order = await orderService.create(req.body, req.userClient)
+  created(res, order, 'Order created')
 }
 
 export async function updateStatus(req: AuthenticatedRequest, res: Response) {
-  const id = req.params.id as string
-  const { status } = req.body
-  const order = await orderService.updateStatus(id, status, req.userClient)
-  res.json(order)
+  // No userClient — use service role so any authenticated user (kitchen, waiter)
+  // can update status regardless of who created the order (RLS would block cross-user updates)
+  const order = await orderService.updateStatus(req.params.id as string, req.body.status)
+  ok(res, order, 'Order status updated')
 }
 
 export async function remove(req: AuthenticatedRequest, res: Response) {
-  const id = req.params.id as string
-  await orderService.remove(id, req.userClient)
-  res.status(204).end()
+  await orderService.remove(req.params.id as string, req.userClient)
+  noContent(res)
 }

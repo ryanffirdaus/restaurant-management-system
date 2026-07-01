@@ -7,7 +7,7 @@ import { getMenuItem } from '../menus/menus.repository.js'
 export async function getOrders(client?: SupabaseClient): Promise<Order[]> {
   const { data, error } = await db(client)
     .from('orders')
-    .select('*, order_items(*, menu_item:menu_item_id(name, image_url))')
+    .select('*, order_items(*, menu_item:menu_item_id(name, image_url)), table:table_id(table_number)')
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
   if (error) throw error
@@ -70,7 +70,7 @@ export async function updateOrderStatus(id: string, status: string, client?: Sup
     .from('orders')
     .update({ status })
     .eq('id', id)
-    .select('*, order_items(*)')
+    .select()
     .single()
   if (error) throw error
   return data
