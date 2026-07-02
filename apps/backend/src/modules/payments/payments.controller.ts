@@ -15,11 +15,12 @@ export async function getByOrder(req: AuthenticatedRequest, res: Response) {
 }
 
 export async function create(req: AuthenticatedRequest, res: Response) {
+  // Service role (no userClient) — cashier settles orders created by other staff,
+  // so RLS must be bypassed for the order-completion update.
   const order = await paymentService.create(
     req.params.orderId as string,
     req.body,
     req.userId!,
-    req.userClient,
   )
   ok(res, order, 'Payment processed')
 }

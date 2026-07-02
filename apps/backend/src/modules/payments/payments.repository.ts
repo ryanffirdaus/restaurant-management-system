@@ -7,6 +7,7 @@ export async function getAllPayments(client?: SupabaseClient): Promise<Payment[]
   const { data, error } = await db(client)
     .from('payments')
     .select('*, order:order_id(id, total_price, table_id, status, customer_name)')
+    .not('paid_at', 'is', null) // only settled payments (exclude pending QRIS attempts)
     .order('paid_at', { ascending: false })
   if (error) throw error
   return data
@@ -53,6 +54,7 @@ export async function createPayment(
     .from('payments')
     .select('amount')
     .eq('order_id', orderId)
+    .not('paid_at', 'is', null) // ignore pending QRIS attempts
 
   const sumPaid = (allPayments ?? []).reduce((s, p) => s + Number(p.amount), 0)
 
