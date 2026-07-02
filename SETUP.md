@@ -41,6 +41,12 @@ DATABASE_URL=postgresql://postgres:your_password@db.your-project.supabase.co:543
 
 # Required — generate a secure random string (min 32 chars)
 JWT_SECRET=your_secret_key_here
+
+# Optional — enables online payments (Cash still works without these)
+# From dashboard.midtrans.com > Settings > Access Keys (sandbox)
+MIDTRANS_MERCHANT_ID=your_merchant_id
+MIDTRANS_CLIENT_KEY=your_client_key
+MIDTRANS_SERVER_KEY=your_server_key
 ```
 
 Generate a secure JWT secret:
@@ -72,6 +78,10 @@ cp docker-compose.example.yml docker-compose.yml
 ```
 
 Edit `docker-compose.yml` and adjust port mappings if needed (e.g. to avoid conflicts with existing services).
+
+### 2.4 Database Migrations
+
+There is no automatic migration runner yet. Open the Supabase Dashboard → SQL Editor and run every file in `apps/backend/supabase/migrations/` **in filename order** (`00000_...` through the latest).
 
 ---
 

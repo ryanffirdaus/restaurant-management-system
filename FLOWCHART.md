@@ -82,7 +82,6 @@
 Ownership Tiap Role
 Admin
  ├── Menus
- ├── Inventory
  ├── Employees
  ├── Reports
  └── All Orders
