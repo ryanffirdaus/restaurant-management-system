@@ -55,11 +55,11 @@ restaurant-management-system/
 │       │   └── lib/api.ts         # fetch wrapper + formatIDR
 │       └── .env                   # Local config (gitignored)
 │
-├── docker/                        # nginx, postgres config
-├── docker-compose.yml             # Local orchestration (gitignored)
+├── docker/                        # nginx config
+├── docker-compose.yml             # Orchestration, local or VPS (gitignored)
 ├── docker-compose.example.yml     # Template
 ├── .env.example                   # Backend env template
-└── SETUP.md                       # Full install/run guide
+└── SETUP.md                       # Setup guide — local, Docker, and VPS deployment
 ```
 
 ---
@@ -133,6 +133,8 @@ Or run each app locally without Docker:
 cd apps/backend && npm install && npm run dev    # http://localhost:4000
 cd apps/frontend && npm install && npm run dev   # http://localhost:5173
 ```
+
+Deploying to a VPS instead? See the **Deploying to a VPS** section in [SETUP.md](SETUP.md#deploying-to-a-vps) — same Docker setup, plus Cloudflare subdomain/SSL configuration.
 
 ---
 

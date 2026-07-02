@@ -1,6 +1,6 @@
-# Setup Guide — Restaurant Management System
+# Setup & Deployment Guide — Restaurant Management System
 
-Step-by-step guide to install and run the project locally using Docker.
+Covers running the project locally (with or without Docker) and deploying it to a VPS behind a Cloudflare subdomain.
 
 ---
 
@@ -9,6 +9,7 @@ Step-by-step guide to install and run the project locally using Docker.
 - [Docker](https://docs.docker.com/get-docker/) and Docker Compose
 - [Node.js 20+](https://nodejs.org/) and npm
 - A [Supabase](https://supabase.com) account and project
+- A [Midtrans](https://midtrans.com) account (sandbox keys are free) — optional, only needed for online payments in the cashier app
 - Git
 
 ---
@@ -24,6 +25,8 @@ cd restaurant-management-system
 
 ## Step 2 — Configure Environment Variables
 
+This project uses two backend env files: root `.env` (read by Docker Compose) and `apps/backend/.env` (read when running the backend directly with `npm run dev`). Fill in one and copy it to the other so they stay in sync.
+
 ### 2.1 Backend environment
 
 ```bash
@@ -33,6 +36,9 @@ cp .env.example .env
 Edit `.env` and fill in your actual values:
 
 ```bash
+NODE_ENV=development
+PORT=4000
+
 # Required — from your Supabase project dashboard
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_ANON_KEY=your_anon_key
@@ -41,6 +47,11 @@ DATABASE_URL=postgresql://postgres:your_password@db.your-project.supabase.co:543
 
 # Required — generate a secure random string (min 32 chars)
 JWT_SECRET=your_secret_key_here
+JWT_EXPIRATION=24h
+
+CORS_ORIGIN=http://localhost:3000
+FRONTEND_URL=http://localhost:3000
+LOG_LEVEL=debug
 
 # Optional — enables online payments (Cash still works without these)
 # From dashboard.midtrans.com > Settings > Access Keys (sandbox)
@@ -52,6 +63,11 @@ MIDTRANS_SERVER_KEY=your_server_key
 Generate a secure JWT secret:
 ```bash
 openssl rand -base64 32
+```
+
+Then copy it for local (non-Docker) backend runs:
+```bash
+cp .env apps/backend/.env
 ```
 
 ### 2.2 Frontend environment
@@ -66,10 +82,11 @@ Edit `apps/frontend/.env`:
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key
 
-# Match the backend port from docker-compose.yml
 VITE_BACKEND_URL=http://localhost:4000
 VITE_API_URL=http://localhost:4000/api
 ```
+
+**Important:** Vite bakes these values into the built JS bundle at *build* time, not runtime. If you change this file, you must rebuild (`npm run build` or `docker compose build frontend`) for the change to take effect.
 
 ### 2.3 Docker Compose
 
@@ -77,45 +94,20 @@ VITE_API_URL=http://localhost:4000/api
 cp docker-compose.example.yml docker-compose.yml
 ```
 
-Edit `docker-compose.yml` and adjust port mappings if needed (e.g. to avoid conflicts with existing services).
-
 ### 2.4 Database Migrations
 
-There is no automatic migration runner yet. Open the Supabase Dashboard → SQL Editor and run every file in `apps/backend/supabase/migrations/` **in filename order** (`00000_...` through the latest).
+There is no automatic migration runner. Open the Supabase Dashboard → **SQL Editor** and run every file in `apps/backend/supabase/migrations/` **in filename order** (`00000_...` through the latest).
 
 ---
 
-## Step 3 — Install Dependencies
+## Step 3 — Run It
 
-### Backend
-
-```bash
-cd apps/backend
-npm install
-cd ../..
-```
-
-### Frontend
+### Option A — Docker (recommended, matches production)
 
 ```bash
-cd apps/frontend
-npm install
-cd ../..
-```
-
----
-
-## Step 4 — Build & Start Docker Services
-
-```bash
-docker-compose build
-docker-compose up -d
-```
-
-Verify all containers are running:
-
-```bash
-docker-compose ps
+docker compose build
+docker compose up -d
+docker compose ps
 ```
 
 Expected output:
@@ -123,154 +115,182 @@ Expected output:
 NAME        STATUS
 backend     Up
 frontend    Up
-postgres    Up
-redis       Up
 nginx       Up
 ```
 
----
+Verify:
+```bash
+curl http://localhost/api/health
+```
 
-## Step 5 — Verify Services
+Then open `http://localhost` in your browser.
 
-### Backend health check
+### Option B — Without Docker
 
 ```bash
-curl http://localhost:4000/api/health
+# Terminal 1
+cd apps/backend && npm install && npm run dev    # http://localhost:4000
+
+# Terminal 2
+cd apps/frontend && npm install && npm run dev   # http://localhost:5173
 ```
-
-Expected response:
-```json
-{
-  "status": "Backend API is running",
-  "timestamp": "2026-01-01T00:00:00.000Z"
-}
-```
-
-### Frontend
-
-Open your browser and navigate to:
-```
-http://localhost:3000
-```
-
-Or via Nginx proxy:
-```
-http://localhost:80
-```
-
----
-
-## Development (without Docker)
-
-### Run backend locally
-
-```bash
-cd apps/backend
-npm run dev
-```
-
-Backend runs on `http://localhost:4000`
-
-### Run frontend locally
-
-```bash
-cd apps/frontend
-npm run dev
-```
-
-Frontend runs on `http://localhost:5173` (Vite default)
 
 ---
 
 ## Docker Commands Reference
 
 ```bash
-# Start services
-docker-compose up -d
-
-# Stop services (keep data)
-docker-compose down
-
-# Stop and delete all data (volumes)
-docker-compose down -v
-
-# Rebuild images
-docker-compose build --no-cache
-
-# View all logs
-docker-compose logs -f
-
-# View logs for a specific service
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-# Restart a service
-docker-compose restart backend
-
-# Open a shell inside a container
-docker exec -it backend sh
-docker exec -it frontend sh
+docker compose up -d              # start
+docker compose down               # stop
+docker compose build --no-cache   # rebuild images
+docker compose logs -f            # all logs
+docker compose logs -f backend    # one service
+docker compose restart backend    # restart one service
+docker exec -it backend sh        # shell into a container
 ```
 
 ---
 
 ## Troubleshooting
 
-### Containers not starting
+**Containers not starting**
+```bash
+docker compose logs backend
+docker compose down
+docker compose build --no-cache
+docker compose up -d
+```
+
+**Port conflict** — edit `docker-compose.yml`, change the host side of the port mapping (e.g. `nginx` service `"80:80"` → `"8080:80"`).
+
+**`.env` not being read** — confirm the file is named exactly `.env` (not `.env.txt`), no stray quotes around values, and restart the container after editing (`docker compose restart backend`).
+
+---
+
+## Deploying to a VPS
+
+The Docker setup above is production-ready as-is — the same `Dockerfile`s and `docker-compose.yml` are what you run on the VPS. This section covers the VPS-specific and Cloudflare-specific parts.
+
+### 1. Point a subdomain at your VPS (Cloudflare)
+
+1. Cloudflare dashboard → your domain → **DNS** → **Add record**
+2. Type: `A`, Name: `app` (or any subdomain, e.g. `app.yourdomain.com`), IPv4 address: your VPS's public IP, Proxy status: **Proxied** (orange cloud)
+3. Save
+
+**SSL/TLS mode** — Cloudflare dashboard → **SSL/TLS** → **Overview**:
+
+- **Flexible** (fastest): browser↔Cloudflare is HTTPS, Cloudflare↔VPS is plain HTTP. No certificate needed on the VPS — matches `docker-compose.yml` as-is (Nginx only listens on port 80). Good for getting started.
+- **Full (strict)** (recommended once live): also encrypts Cloudflare↔VPS, using a free 15-year Cloudflare **Origin Certificate** (no Let's Encrypt renewal needed).
+  1. Cloudflare → **SSL/TLS** → **Origin Server** → **Create Certificate** → copy the certificate and key
+  2. On the VPS: `mkdir -p docker/nginx/certs` and save them as `cert.pem` / `key.pem` there
+  3. Replace `docker/nginx/default.conf` with:
+     ```nginx
+     server {
+         listen 80;
+         return 301 https://$host$request_uri;
+     }
+     server {
+         listen 443 ssl;
+         ssl_certificate     /etc/nginx/certs/cert.pem;
+         ssl_certificate_key /etc/nginx/certs/key.pem;
+         client_max_body_size 50M;
+
+         location / {
+             proxy_pass http://frontend:80;
+             proxy_set_header Host $host;
+             proxy_set_header X-Real-IP $remote_addr;
+             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+         }
+         location /api {
+             proxy_pass http://backend:4000;
+             proxy_set_header Host $host;
+             proxy_set_header X-Real-IP $remote_addr;
+             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+         }
+     }
+     ```
+  4. In `docker-compose.yml`, add `"443:443"` and mount `./docker/nginx/certs:/etc/nginx/certs:ro` on the `nginx` service, then `docker compose up -d --build nginx`
+  5. Set Cloudflare SSL/TLS mode to **Full (strict)**
+
+### 2. Prepare the VPS
 
 ```bash
-# Check container logs
-docker-compose logs backend
-docker-compose logs frontend
+ssh youruser@your-vps-ip
 
-# Rebuild from scratch
-docker-compose down -v
-docker-compose build --no-cache
-docker-compose up -d
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw enable
 ```
 
-### Port conflicts
+### 3. Clone and configure
 
-Edit `docker-compose.yml` and change the host port (left side of `:`):
-
-```yaml
-ports:
-  - "4001:4000"   # change 4001 to any free port
-```
-
-### Backend can't connect to Redis or Postgres
-
-Make sure the service is healthy:
+Follow **Step 1 and Step 2** above on the VPS. For production, use these values in `.env`:
 
 ```bash
-docker-compose ps
-docker-compose logs redis
-docker-compose logs postgres
+NODE_ENV=production
+JWT_SECRET=<generate a NEW one — do not reuse a dev value>
+CORS_ORIGIN=https://app.yourdomain.com
+FRONTEND_URL=https://app.yourdomain.com
+LOG_LEVEL=info
 ```
 
-If containers are not healthy, remove volumes and restart:
+And in `apps/frontend/.env`, point at your real domain instead of `localhost`:
+```bash
+VITE_BACKEND_URL=https://app.yourdomain.com
+VITE_API_URL=https://app.yourdomain.com/api
+```
+
+Run the migrations (Step 2.4) if this Supabase project hasn't had them applied yet.
+
+### 4. Build and start
 
 ```bash
-docker-compose down -v
-docker-compose up -d
+docker compose up -d --build
+docker compose ps
+curl http://localhost/api/health
 ```
 
-### .env not being read
+Visit `https://app.yourdomain.com` — you should see the login page.
 
-- Make sure the file is named exactly `.env` (not `.env.txt`)
-- Check for extra spaces or quotes around values
-- Restart containers after editing: `docker-compose restart backend`
+### 5. Point Midtrans at your production webhook
+
+Midtrans Dashboard → **Settings** → **Configuration** → **Payment Notification URL**:
+```
+https://app.yourdomain.com/api/midtrans/webhook
+```
+This lets online payments (QRIS, Virtual Account, etc.) auto-confirm instead of relying on the manual "Confirm Manually" fallback in the cashier screen.
+
+### 6. Redeploying after code changes
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+If you changed `apps/frontend/.env`, you must rebuild the `frontend` service specifically since those values are compiled into the bundle, not read at runtime.
+
+---
+
+## Notes / known limitations
+
+- CORS is currently wide open (`cors()` with no origin restriction) since frontend and backend share the same origin behind Nginx — the `CORS_ORIGIN` env var is not currently read by the code.
+- `REDIS_URL` and `DATABASE_URL` are present for compatibility/manual `psql` access but nothing in the current backend code connects to them directly — all data access goes through the Supabase client. There's no Redis or Postgres container in `docker-compose.yml`.
+- Rotate `JWT_SECRET` and switch to Midtrans **production** keys (separate dashboard toggle + new key pair) before accepting real money from real customers.
 
 ---
 
 ## Security Checklist
 
-Before deploying to production:
+Before going live:
 
-- [ ] `JWT_SECRET` is a random string of at least 32 characters
-- [ ] Supabase service role key is not exposed to the frontend
-- [ ] `.env` files are NOT committed to git (check `.gitignore`)
-- [ ] `docker-compose.yml` is NOT committed to git (contains real ports)
-- [ ] `CORS_ORIGIN` is set to your production frontend URL
-- [ ] `NODE_ENV=production` is set in production
+- [ ] `JWT_SECRET` is a random string of at least 32 characters, different from any dev value
+- [ ] Supabase service role key is only in backend env, never exposed to the frontend
+- [ ] `.env` and `docker-compose.yml` are NOT committed to git (check `.gitignore`)
+- [ ] `NODE_ENV=production` is set
 - [ ] Supabase Row Level Security (RLS) is enabled on your tables
+- [ ] Midtrans production keys are in place (not sandbox) if accepting real payments
