@@ -1,16 +1,40 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { apiGet, apiPost, formatUSD } from '../../lib/api'
+import { apiGet, apiPost, formatIDR } from '../../lib/api'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-type PaymentMethod = 'cash' | 'qris' | 'doku'
-type Step =
-  | 'select-method'
-  | 'confirm-cash'
-  | 'confirm-qris'
-  | 'doku-waiting'
-  | 'success'
+type Step = 'select-method' | 'confirm-cash' | 'code-waiting' | 'success'
+
+type ChannelGroup = 'qris' | 'ewallet' | 'virtual_account'
+
+interface PaymentChannel {
+  id: string
+  label: string
+  group: ChannelGroup
+  kind: 'qr' | 'code'
+  icon: string
+  instructions: string
+}
+
+const GROUP_LABELS: Record<ChannelGroup, string> = {
+  qris: 'QRIS',
+  ewallet: 'E-Wallet',
+  virtual_account: 'Virtual Account',
+}
+
+const GROUP_ORDER: ChannelGroup[] = ['qris', 'ewallet', 'virtual_account']
+
+interface ChannelPayment {
+  invoiceNumber: string
+  channel: string
+  channelLabel: string
+  instructions: string
+  kind: 'qr' | 'code'
+  paymentCode: string | null
+  qrUrl: string | null
+  expiresAt: string | null
+}
 
 interface OrderItem {
   id: string
@@ -47,6 +71,18 @@ function elapsed(createdAt: string) {
   if (diff < 1) return 'just now'
   if (diff < 60) return `${diff}m ago`
   return `${Math.floor(diff / 60)}h ${diff % 60}m ago`
+}
+
+// Group numeric codes in blocks of 4 for readability (leave mixed codes as-is)
+function formatPaymentCode(code: string) {
+  if (!/^\d+$/.test(code)) return code
+  return code.replace(/(.{4})/g, '$1 ').trim()
+}
+
+function expiryLabel(expiresAt: string | null) {
+  if (!expiresAt) return null
+  const mins = Math.max(0, Math.round((new Date(expiresAt).getTime() - Date.now()) / 60000))
+  return `Expires in ${mins} min`
 }
 
 // ---------------------------------------------------------------------------
@@ -101,7 +137,7 @@ function OrderList({
                     </p>
                   </div>
                   <span className="text-sm font-bold text-primary tabular-nums shrink-0 ml-2">
-                    {formatUSD(o.total_price ?? 0)}
+                    {formatIDR(o.total_price ?? 0)}
                   </span>
                 </div>
               </button>
@@ -116,33 +152,26 @@ function OrderList({
 // ---------------------------------------------------------------------------
 // Main Cashier App
 // ---------------------------------------------------------------------------
-const METHODS: { id: PaymentMethod; icon: string; label: string; desc: string }[] = [
-  { id: 'cash', icon: 'ri-money-dollar-circle-line', label: 'Cash', desc: 'Terima pembayaran tunai' },
-  { id: 'qris', icon: 'ri-qr-code-line', label: 'QRIS', desc: 'GoPay, OVO, DANA, ShopeePay, dll.' },
-  { id: 'doku', icon: 'ri-bank-card-line', label: 'DOKU Online', desc: 'Virtual Account, kartu kredit/debit' },
-]
-
 export default function CashierApp() {
   const [orders, setOrders] = useState<Order[]>([])
+  const [channels, setChannels] = useState<PaymentChannel[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<Order | null>(null)
-  const [method, setMethod] = useState<PaymentMethod>('cash')
+  const [method, setMethod] = useState<string>('cash') // 'cash' | channel id
   const [step, setStep] = useState<Step>('select-method')
   const [processing, setProcessing] = useState(false)
   const [cashReceived, setCashReceived] = useState('')
-  const [dokuUrl, setDokuUrl] = useState<string | null>(null)
+  const [payment, setPayment] = useState<ChannelPayment | null>(null)
+  const [copied, setCopied] = useState(false)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const dokuPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const payPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   // ---- fetch orders ----
   const fetchOrders = useCallback(async () => {
     try {
       const data = await apiGet<Order[]>('/orders')
       const unpaid = data.filter(
-        o =>
-          !o.paid_at &&
-          o.status !== 'cancelled' &&
-          o.total_price != null,
+        o => !o.paid_at && o.status !== 'cancelled' && o.total_price != null,
       )
       setOrders(unpaid)
       setSelected(prev => (prev ? unpaid.find(o => o.id === prev.id) ?? null : prev))
@@ -155,8 +184,12 @@ export default function CashierApp() {
 
   useEffect(() => {
     fetchOrders()
+    apiGet<PaymentChannel[]>('/midtrans/channels').then(setChannels).catch(() => setChannels([]))
     pollRef.current = setInterval(fetchOrders, 10_000)
-    return () => { if (pollRef.current) clearInterval(pollRef.current) }
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current)
+      if (payPollRef.current) clearInterval(payPollRef.current)
+    }
   }, [fetchOrders])
 
   // ---- select an order ----
@@ -165,15 +198,17 @@ export default function CashierApp() {
     setStep('select-method')
     setMethod('cash')
     setCashReceived('')
-    setDokuUrl(null)
-    if (dokuPollRef.current) clearInterval(dokuPollRef.current)
+    setPayment(null)
+    setCopied(false)
+    if (payPollRef.current) clearInterval(payPollRef.current)
   }
 
   function resetPayment() {
     setStep('select-method')
-    setDokuUrl(null)
+    setPayment(null)
     setCashReceived('')
-    if (dokuPollRef.current) clearInterval(dokuPollRef.current)
+    setCopied(false)
+    if (payPollRef.current) clearInterval(payPollRef.current)
   }
 
   // ---- cash ----
@@ -188,91 +223,88 @@ export default function CashierApp() {
       setStep('success')
       await fetchOrders()
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Pembayaran gagal')
+      alert(e instanceof Error ? e.message : 'Payment failed')
     } finally {
       setProcessing(false)
     }
   }
 
-  // ---- qris (manual confirm) ----
-  async function handleQrisConfirm() {
+  // ---- Midtrans inline payment (QR / payment code) ----
+  async function handleChannelInit(channelId: string) {
     if (!selected) return
     setProcessing(true)
     try {
-      await apiPost(`/payments/order/${selected.id}`, {
-        amount: selected.total_price,
-        method: 'qris',
+      const result = await apiPost<ChannelPayment>('/midtrans/payment', {
+        orderId: selected.id,
+        channel: channelId,
       })
-      setStep('success')
-      await fetchOrders()
-    } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Pembayaran gagal')
-    } finally {
-      setProcessing(false)
-    }
-  }
+      setPayment(result)
+      setStep('code-waiting')
 
-  // ---- doku checkout ----
-  async function handleDokuInit() {
-    if (!selected) return
-    setProcessing(true)
-    try {
-      const result = await apiPost<{ checkoutUrl: string; invoiceNumber: string }>(
-        '/doku/checkout',
-        { orderId: selected.id },
-      )
-      setDokuUrl(result.checkoutUrl)
-      setStep('doku-waiting')
-      window.open(result.checkoutUrl, '_blank', 'noopener')
-
-      // Poll every 5s for paid_at to appear on this order
-      dokuPollRef.current = setInterval(async () => {
-        await fetchOrders()
-        // fetchOrders updates `selected` via setSelected, but we check directly
-        const fresh = await apiGet<Order[]>('/orders')
-        const thisOrder = fresh.find(o => o.id === selected.id)
-        if (thisOrder?.paid_at) {
-          if (dokuPollRef.current) clearInterval(dokuPollRef.current)
-          setStep('success')
+      // Poll every 5s for the Midtrans webhook to mark the order paid
+      const orderId = selected.id
+      payPollRef.current = setInterval(async () => {
+        try {
+          const fresh = await apiGet<Order[]>('/orders')
+          const thisOrder = fresh.find(o => o.id === orderId)
+          if (thisOrder?.paid_at) {
+            if (payPollRef.current) clearInterval(payPollRef.current)
+            setStep('success')
+            await fetchOrders()
+          }
+        } catch {
+          // keep polling
         }
       }, 5_000)
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Gagal membuat DOKU checkout')
+      alert(e instanceof Error ? e.message : 'Could not create payment code')
     } finally {
       setProcessing(false)
     }
   }
 
-  async function handleDokuManualConfirm() {
-    // Cashier can manually confirm if webhook didn't fire (e.g. sandbox/ngrok issues)
+  // Manual confirm — fallback for dev/testing when the webhook can't reach the server
+  async function handleManualConfirm() {
     if (!selected) return
     setProcessing(true)
     try {
       await apiPost(`/payments/order/${selected.id}`, {
         amount: selected.total_price,
         method: 'other',
-        referenceId: `DOKU-MANUAL`,
+        referenceId: payment?.invoiceNumber ?? 'ONLINE-MANUAL',
       })
-      if (dokuPollRef.current) clearInterval(dokuPollRef.current)
+      if (payPollRef.current) clearInterval(payPollRef.current)
       setStep('success')
       await fetchOrders()
     } catch (e: unknown) {
-      alert(e instanceof Error ? e.message : 'Konfirmasi gagal')
+      alert(e instanceof Error ? e.message : 'Confirmation failed')
     } finally {
       setProcessing(false)
     }
   }
 
   function handleDone() {
-    if (dokuPollRef.current) clearInterval(dokuPollRef.current)
+    if (payPollRef.current) clearInterval(payPollRef.current)
     setSelected(null)
     setStep('select-method')
+  }
+
+  async function copyCode() {
+    if (!payment?.paymentCode) return
+    try {
+      await navigator.clipboard.writeText(payment.paymentCode)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard unavailable
+    }
   }
 
   // ---- derived ----
   const total = selected?.total_price ?? 0
   const cashNum = parseFloat(cashReceived) || 0
   const change = cashNum - total
+  const activeChannel = channels.find(c => c.id === method)
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -299,16 +331,17 @@ export default function CashierApp() {
         {!selected ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-3 text-text-muted">
             <i className="ri-bill-line text-5xl opacity-30" />
-            <p className="text-sm">Pilih pesanan untuk proses pembayaran</p>
+            <p className="text-sm">Select an order to process payment</p>
           </div>
         ) : (
-          <div className="flex-1 overflow-y-auto p-5 md:p-8 max-w-lg mx-auto w-full">
+          <div className="flex-1 overflow-y-auto">
+          <div className="p-5 md:p-8 max-w-lg mx-auto w-full">
             {/* Mobile back */}
             <button
               onClick={() => { setSelected(null); resetPayment() }}
               className="md:hidden mb-4 flex items-center gap-1.5 text-sm text-text-muted hover:text-text-main"
             >
-              <i className="ri-arrow-left-line" /> Semua Pesanan
+              <i className="ri-arrow-left-line" /> All Orders
             </button>
 
             {/* Header */}
@@ -327,61 +360,101 @@ export default function CashierApp() {
                     {item.quantity}× {item.menu_item?.name ?? '?'}
                   </span>
                   <span className="text-text-main font-medium tabular-nums">
-                    {formatUSD(item.price_at_purchase * item.quantity)}
+                    {formatIDR(item.price_at_purchase * item.quantity)}
                   </span>
                 </div>
               ))}
               <div className="pt-2 border-t border-outline flex justify-between font-bold text-sm">
                 <span className="text-text-main">Total</span>
-                <span className="text-primary tabular-nums text-base">{formatUSD(total)}</span>
+                <span className="text-primary tabular-nums text-base">{formatIDR(total)}</span>
               </div>
             </div>
 
             {/* ---- step: select method ---- */}
             {step === 'select-method' && (
-              <div className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">
-                  Metode Pembayaran
-                </p>
-                {METHODS.map(m => (
+              <div className="space-y-5">
+                {/* Cash */}
+                <div className="space-y-2">
+                  <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                    Cash
+                  </p>
                   <button
-                    key={m.id}
-                    onClick={() => setMethod(m.id)}
+                    onClick={() => setMethod('cash')}
                     className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl border transition-all text-left ${
-                      method === m.id
+                      method === 'cash'
                         ? 'border-primary bg-primary/10'
                         : 'border-outline hover:border-primary/40 hover:bg-surface-variant/30'
                     }`}
                   >
                     <div
                       className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                        method === m.id ? 'bg-primary text-white' : 'bg-surface-variant text-text-muted'
+                        method === 'cash' ? 'bg-primary text-white' : 'bg-surface-variant text-text-muted'
                       }`}
                     >
-                      <i className={m.icon} />
+                      <i className="ri-money-dollar-circle-line" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-text-main">{m.label}</p>
-                      <p className="text-xs text-text-muted">{m.desc}</p>
+                      <p className="text-sm font-semibold text-text-main">Cash</p>
+                      <p className="text-xs text-text-muted">Accept physical cash payment</p>
                     </div>
-                    {method === m.id && (
+                    {method === 'cash' && (
                       <i className="ri-check-line ml-auto text-primary text-lg shrink-0" />
                     )}
                   </button>
-                ))}
+                </div>
+
+                {/* Midtrans channels — grouped by payment type */}
+                {GROUP_ORDER.map(group => {
+                  const groupChannels = channels.filter(c => c.group === group)
+                  if (groupChannels.length === 0) return null
+                  return (
+                    <div key={group} className="space-y-2">
+                      <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                        {GROUP_LABELS[group]}
+                      </p>
+                      {groupChannels.map(c => (
+                        <button
+                          key={c.id}
+                          onClick={() => setMethod(c.id)}
+                          className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all text-left ${
+                            method === c.id
+                              ? 'border-primary bg-primary/10'
+                              : 'border-outline hover:border-primary/40 hover:bg-surface-variant/30'
+                          }`}
+                        >
+                          <div
+                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
+                              method === c.id ? 'bg-primary text-white' : 'bg-surface-variant text-text-muted'
+                            }`}
+                          >
+                            <i className={c.icon} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-text-main">{c.label}</p>
+                            <p className="text-xs text-text-muted truncate">
+                              {c.kind === 'qr' ? 'Scan QR code' : c.instructions}
+                            </p>
+                          </div>
+                          {method === c.id && (
+                            <i className="ri-check-line ml-auto text-primary text-lg shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )
+                })}
 
                 <button
                   onClick={() => {
                     if (method === 'cash') setStep('confirm-cash')
-                    else if (method === 'qris') setStep('confirm-qris')
-                    else handleDokuInit()
+                    else handleChannelInit(method)
                   }}
                   disabled={processing}
                   className="w-full mt-4 py-4 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
                 >
                   {processing
-                    ? 'Memproses…'
-                    : `Lanjut dengan ${METHODS.find(m2 => m2.id === method)?.label}`}
+                    ? 'Processing…'
+                    : `Continue with ${method === 'cash' ? 'Cash' : activeChannel?.label ?? '…'}`}
                 </button>
               </div>
             )}
@@ -390,10 +463,10 @@ export default function CashierApp() {
             {step === 'confirm-cash' && (
               <div className="space-y-4">
                 <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
-                  Pembayaran Tunai
+                  Cash Payment
                 </p>
                 <div>
-                  <label className="text-xs text-text-muted mb-1 block">Uang Diterima (IDR)</label>
+                  <label className="text-xs text-text-muted mb-1 block">Amount Received (IDR)</label>
                   <input
                     type="number"
                     value={cashReceived}
@@ -404,17 +477,23 @@ export default function CashierApp() {
                   />
                 </div>
 
-                {/* Quick denomination buttons */}
+                {/* Quick amount buttons — exact total + round-ups */}
                 <div className="grid grid-cols-3 gap-2">
-                  {[50_000, 100_000, 200_000].map(v => (
-                    <button
-                      key={v}
-                      onClick={() => setCashReceived(String(v))}
-                      className="py-2 rounded-lg bg-surface-variant text-xs font-semibold text-text-muted hover:bg-outline/40 transition-colors"
-                    >
-                      {formatUSD(v)}
-                    </button>
-                  ))}
+                  {[
+                    Math.ceil(total),
+                    Math.ceil(total / 5000) * 5000,
+                    Math.ceil(total / 10000) * 10000,
+                  ]
+                    .filter((v, i, arr) => v > 0 && arr.indexOf(v) === i)
+                    .map(v => (
+                      <button
+                        key={v}
+                        onClick={() => setCashReceived(String(v))}
+                        className="py-2 rounded-lg bg-surface-variant text-xs font-semibold text-text-muted hover:bg-outline/40 transition-colors"
+                      >
+                        {formatIDR(v)}
+                      </button>
+                    ))}
                 </div>
 
                 {cashNum > 0 && (
@@ -427,22 +506,20 @@ export default function CashierApp() {
                   >
                     <div className="flex justify-between">
                       <span className="text-text-muted">Total</span>
-                      <span className="font-bold text-text-main tabular-nums">{formatUSD(total)}</span>
+                      <span className="font-bold text-text-main tabular-nums">{formatIDR(total)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-text-muted">Diterima</span>
-                      <span className="font-bold text-text-main tabular-nums">{formatUSD(cashNum)}</span>
+                      <span className="text-text-muted">Received</span>
+                      <span className="font-bold text-text-main tabular-nums">{formatIDR(cashNum)}</span>
                     </div>
                     <div className="flex justify-between pt-1.5 border-t border-outline/50">
-                      <span
-                        className={`font-bold ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}
-                      >
-                        {change >= 0 ? 'Kembalian' : 'Kurang'}
+                      <span className={`font-bold ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {change >= 0 ? 'Change' : 'Short'}
                       </span>
                       <span
                         className={`font-bold tabular-nums ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}
                       >
-                        {formatUSD(Math.abs(change))}
+                        {formatIDR(Math.abs(change))}
                       </span>
                     </div>
                   </div>
@@ -453,97 +530,86 @@ export default function CashierApp() {
                     onClick={resetPayment}
                     className="flex-1 py-3 rounded-xl border border-outline text-sm font-semibold text-text-muted hover:bg-surface-variant transition-colors"
                   >
-                    Kembali
+                    Back
                   </button>
                   <button
                     onClick={handleCashConfirm}
                     disabled={processing || (cashNum > 0 && change < 0)}
                     className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors"
                   >
-                    {processing ? 'Memproses…' : 'Konfirmasi Bayar'}
+                    {processing ? 'Processing…' : 'Confirm Payment'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* ---- step: qris ---- */}
-            {step === 'confirm-qris' && (
+            {/* ---- step: payment waiting (inline QR / payment code) ---- */}
+            {step === 'code-waiting' && payment && (
               <div className="space-y-4">
                 <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
-                  Pembayaran QRIS
+                  {payment.channelLabel}
                 </p>
-                <div className="flex flex-col items-center gap-4 py-6 border border-outline rounded-2xl bg-white">
-                  {/* Replace this with your actual static QRIS image: <img src="/qris.png" alt="QRIS" className="w-48 h-48" /> */}
-                  <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center">
-                    <i className="ri-qr-code-line text-7xl text-gray-400" />
-                  </div>
-                  <p className="text-sm text-gray-600 font-medium">Scan dengan GoPay, OVO, DANA, dll.</p>
-                  <p className="text-2xl font-bold text-gray-900 tabular-nums">{formatUSD(total)}</p>
-                </div>
-                <p className="text-xs text-text-muted text-center">
-                  Setelah pelanggan scan dan bayar, klik Konfirmasi di bawah.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={resetPayment}
-                    className="flex-1 py-3 rounded-xl border border-outline text-sm font-semibold text-text-muted hover:bg-surface-variant transition-colors"
-                  >
-                    Kembali
-                  </button>
-                  <button
-                    onClick={handleQrisConfirm}
-                    disabled={processing}
-                    className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                  >
-                    {processing ? 'Memproses…' : 'Konfirmasi Sudah Bayar'}
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* ---- step: doku waiting ---- */}
-            {step === 'doku-waiting' && (
-              <div className="space-y-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
-                  DOKU Online Payment
-                </p>
-                <div className="rounded-2xl border border-outline p-6 flex flex-col items-center gap-4 text-center">
-                  <div className="w-14 h-14 rounded-full bg-blue-500/10 flex items-center justify-center animate-pulse">
-                    <i className="ri-loader-4-line text-3xl text-blue-400 animate-spin" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-text-main">Menunggu pembayaran…</p>
-                    <p className="text-xs text-text-muted mt-1">
-                      Halaman DOKU telah dibuka di tab baru. Sistem otomatis terkonfirmasi setelah pelanggan selesai bayar.
-                    </p>
-                  </div>
-                  {dokuUrl && (
-                    <a
-                      href={dokuUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-primary underline"
+                {/* Payment card */}
+                <div className="rounded-2xl border border-outline p-6 flex flex-col items-center gap-4 text-center card-bg">
+                  <p className="text-xs text-text-muted">{payment.instructions}</p>
+
+                  {payment.kind === 'qr' && payment.qrUrl ? (
+                    <div className="bg-white rounded-xl p-4">
+                      <img
+                        src={payment.qrUrl}
+                        alt={`${payment.channelLabel} QR code`}
+                        className="w-56 h-56 object-contain"
+                      />
+                    </div>
+                  ) : payment.paymentCode ? (
+                    <button
+                      onClick={copyCode}
+                      className="group w-full rounded-xl bg-surface-variant border border-outline px-4 py-5 hover:border-primary/50 transition-colors"
+                      title="Tap to copy"
                     >
-                      Buka ulang halaman DOKU →
-                    </a>
-                  )}
+                      <p className="font-mono text-2xl md:text-3xl font-bold text-text-main tracking-wider tabular-nums break-all">
+                        {formatPaymentCode(payment.paymentCode)}
+                      </p>
+                      <p className="text-[11px] mt-2 text-text-muted group-hover:text-primary transition-colors">
+                        {copied ? (
+                          <span className="text-primary font-semibold">
+                            <i className="ri-check-line" /> Copied!
+                          </span>
+                        ) : (
+                          <span><i className="ri-file-copy-line" /> Tap to copy</span>
+                        )}
+                      </p>
+                    </button>
+                  ) : null}
+
+                  <div className="flex items-center gap-4 text-xs text-text-muted">
+                    <span className="font-bold text-primary text-sm tabular-nums">{formatIDR(total)}</span>
+                    {payment.expiresAt && <span>{expiryLabel(payment.expiresAt)}</span>}
+                  </div>
+
+                  <div className="flex items-center gap-2 text-xs text-text-muted">
+                    <i className="ri-loader-4-line animate-spin text-blue-400" />
+                    Waiting for payment — confirms automatically
+                  </div>
                 </div>
+
                 <p className="text-xs text-text-muted text-center">
-                  Jika webhook tidak berfungsi (development/testing), klik tombol manual di bawah.
+                  If the webhook is not reachable (development/testing), use the manual confirm below.
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={resetPayment}
                     className="flex-1 py-3 rounded-xl border border-outline text-sm font-semibold text-text-muted hover:bg-surface-variant transition-colors"
                   >
-                    Batal
+                    Cancel
                   </button>
                   <button
-                    onClick={handleDokuManualConfirm}
+                    onClick={handleManualConfirm}
                     disabled={processing}
                     className="flex-1 py-3 rounded-xl bg-orange-500/80 text-white text-sm font-bold hover:bg-orange-500 disabled:opacity-50 transition-colors"
                   >
-                    {processing ? 'Memproses…' : 'Konfirmasi Manual'}
+                    {processing ? 'Processing…' : 'Confirm Manually'}
                   </button>
                 </div>
               </div>
@@ -556,16 +622,16 @@ export default function CashierApp() {
                   <i className="ri-checkbox-circle-fill text-5xl text-green-400" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-text-main">Pembayaran Diterima</h3>
+                  <h3 className="text-xl font-bold text-text-main">Payment Received</h3>
                   <p className="text-sm text-text-muted mt-1">
-                    {tableLabel(selected)} • {formatUSD(total)}
+                    {tableLabel(selected)} • {formatIDR(total)}
                   </p>
                 </div>
                 {method === 'cash' && cashNum > 0 && change >= 0 && (
                   <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-6 py-4 w-full">
-                    <p className="text-sm text-green-400 font-semibold">Kembalian untuk pelanggan</p>
+                    <p className="text-sm text-green-400 font-semibold">Change for customer</p>
                     <p className="text-3xl font-bold text-green-400 tabular-nums mt-1">
-                      {formatUSD(change)}
+                      {formatIDR(change)}
                     </p>
                   </div>
                 )}
@@ -573,10 +639,11 @@ export default function CashierApp() {
                   onClick={handleDone}
                   className="w-full py-4 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-colors mt-2"
                 >
-                  Pesanan Berikutnya
+                  Next Order
                 </button>
               </div>
             )}
+          </div>
           </div>
         )}
       </div>
