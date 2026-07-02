@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiGet, apiPost, formatIDR } from '../../lib/api'
+import { useAuth } from '../../context/AuthContext'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -153,6 +154,7 @@ function OrderList({
 // Main Cashier App
 // ---------------------------------------------------------------------------
 export default function CashierApp() {
+  const { logout } = useAuth()
   const [orders, setOrders] = useState<Order[]>([])
   const [channels, setChannels] = useState<PaymentChannel[]>([])
   const [loading, setLoading] = useState(true)
@@ -307,7 +309,23 @@ export default function CashierApp() {
   const activeChannel = channels.find(c => c.id === method)
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background flex-col overflow-hidden">
+      {/* ---- Header ---- */}
+      <header className="shrink-0 h-14 bg-background border-b border-outline flex items-center px-4 gap-3">
+        <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-green-500/30">
+          <i className="ri-receipt-line text-base" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-bold text-text-main leading-tight">Cashier</p>
+          <p className="text-[10px] text-green-400 font-black uppercase tracking-widest leading-none">Payment</p>
+        </div>
+        <button onClick={logout} className="w-9 h-9 rounded-xl flex items-center justify-center text-text-muted hover:text-danger">
+          <i className="ri-logout-box-r-line text-lg" />
+        </button>
+      </header>
+
+      {/* ---- Content ---- */}
+      <div className="flex flex-1 overflow-hidden">
       {/* ------------------------------------------------------------------ */}
       {/* Left — order list */}
       {/* ------------------------------------------------------------------ */}
@@ -646,6 +664,7 @@ export default function CashierApp() {
           </div>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
