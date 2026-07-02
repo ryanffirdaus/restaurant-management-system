@@ -24,9 +24,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-sm card-bg rounded-2xl border border-outline shadow-sm p-6">
         <div className="text-center mb-6">
-          <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center mx-auto mb-3">
-            <span className="text-on-primary font-bold text-xl">S</span>
-          </div>
+          <img src="/logo.svg" alt="Servio" className="w-12 h-12 rounded-xl mx-auto mb-3" />
           <h1 className="text-xl font-bold text-text-main tracking-tight">Servio</h1>
           <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">
             Admin Terminal

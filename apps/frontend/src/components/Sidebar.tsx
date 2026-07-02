@@ -57,9 +57,7 @@ function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: S
       >
         {/* Brand */}
         <div className="h-16 px-5 flex items-center gap-3 border-b border-outline shrink-0">
-          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-on-primary font-bold text-sm shrink-0">
-            S
-          </div>
+          <img src="/logo.svg" alt="Servio" className="w-8 h-8 rounded-lg shrink-0" />
           <div>
             <h1 className="text-base font-bold tracking-tight text-text-main leading-tight">Servio</h1>
             <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none">
