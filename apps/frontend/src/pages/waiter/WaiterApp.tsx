@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
-import { apiGet, apiPost, apiPatch, formatUSD } from '../../lib/api'
+import { apiGet, apiPost, apiPatch, formatIDR } from '../../lib/api'
 import Icon from '../../components/Icon'
 import { Textarea } from '../../components/ui'
 
@@ -234,7 +234,7 @@ function OrderCard({ order, onStatusChange }: {
               </span>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-xs text-text-muted tabular-nums">
-                  {formatUSD(item.quantity * item.price_at_purchase)}
+                  {formatIDR(item.quantity * item.price_at_purchase)}
                 </span>
                 <ItemStatusDot status={item.item_status ?? 'pending'} />
               </div>
@@ -253,7 +253,7 @@ function OrderCard({ order, onStatusChange }: {
         {/* Total + time */}
         <div className="flex justify-between items-center text-xs text-text-muted pt-1 border-t border-outline">
           <span className="font-bold text-text-main tabular-nums">
-            {order.total_price != null ? formatUSD(order.total_price) : '—'}
+            {order.total_price != null ? formatIDR(order.total_price) : '—'}
           </span>
           <span>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
@@ -447,7 +447,7 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
                     <span className="font-mono text-[10px] text-text-muted">#{order.id.slice(0, 8).toUpperCase()}</span>
                     <StatusPill status={order.status} />
                     <span className="text-xs text-text-muted tabular-nums ml-auto">
-                      {order.total_price != null ? formatUSD(order.total_price) : '—'}
+                      {order.total_price != null ? formatIDR(order.total_price) : '—'}
                     </span>
                   </div>
                 ))}
@@ -499,7 +499,7 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
                     <p className="text-sm font-semibold text-text-main truncate">{item.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`text-[10px] font-bold ${catColor}`}>{item.category ?? 'Other'}</span>
-                      <span className="text-xs font-bold text-primary tabular-nums">{formatUSD(item.price)}</span>
+                      <span className="text-xs font-bold text-primary tabular-nums">{formatIDR(item.price)}</span>
                     </div>
                   </div>
                   {inCart ? (
@@ -530,7 +530,7 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
               >
                 <span className="w-7 h-7 rounded-xl bg-black/20 flex items-center justify-center text-sm font-black">{cartCount}</span>
                 <span>View Order</span>
-                <span className="tabular-nums">{formatUSD(cartTotal)}</span>
+                <span className="tabular-nums">{formatIDR(cartTotal)}</span>
               </button>
             </div>
           )}
@@ -564,7 +564,7 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
                     <button onClick={() => setQty(c.menuItem.id, c.quantity + 1)} className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center font-bold text-primary touch-manipulation">+</button>
                   </div>
                   <span className="flex-1 text-sm text-text-main truncate">{c.menuItem.name}</span>
-                  <span className="text-sm font-bold text-primary tabular-nums shrink-0">{formatUSD(c.menuItem.price * c.quantity)}</span>
+                  <span className="text-sm font-bold text-primary tabular-nums shrink-0">{formatIDR(c.menuItem.price * c.quantity)}</span>
                 </div>
               ))}
 
@@ -582,7 +582,7 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
               {/* Total */}
               <div className="flex justify-between items-center py-3 border-t border-outline">
                 <span className="font-semibold text-text-muted">Total</span>
-                <span className="text-xl font-black text-primary tabular-nums">{formatUSD(cartTotal)}</span>
+                <span className="text-xl font-black text-primary tabular-nums">{formatIDR(cartTotal)}</span>
               </div>
             </div>
 
@@ -593,7 +593,7 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
                 disabled={saving}
                 className="w-full bg-primary text-black font-bold text-base py-4 rounded-2xl active:scale-[0.98] touch-manipulation shadow-lg shadow-primary/30 disabled:opacity-50"
               >
-                {saving ? 'Placing order…' : `Place Order · ${formatUSD(cartTotal)}`}
+                {saving ? 'Placing order…' : `Place Order · ${formatIDR(cartTotal)}`}
               </button>
             </div>
           </div>

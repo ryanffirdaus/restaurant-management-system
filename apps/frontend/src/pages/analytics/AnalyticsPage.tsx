@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { apiGet, formatUSD } from '../../lib/api'
+import { apiGet, formatIDR } from '../../lib/api'
 import Icon from '../../components/Icon'
 
 interface Order {
@@ -27,7 +27,7 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
         return (
           <div key={d.label} className="flex-1 flex flex-col items-center gap-1 group">
             <span className="text-[9px] text-text-muted opacity-0 group-hover:opacity-100 transition-opacity font-bold">
-              {formatUSD(d.value)}
+              {formatIDR(d.value)}
             </span>
             <div className="w-full rounded-t-md bg-primary/20 relative overflow-hidden" style={{ height: '80px' }}>
               <div
@@ -174,8 +174,8 @@ export default function AnalyticsPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
         {[
-          { label: 'Total Revenue', value: formatUSD(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-primary bg-primary/10' },
-          { label: 'Avg Order Value', value: formatUSD(avgOrderValue), icon: 'ri-line-chart-line', cls: 'text-blue-400 bg-blue-500/10' },
+          { label: 'Total Revenue', value: formatIDR(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-primary bg-primary/10' },
+          { label: 'Avg Order Value', value: formatIDR(avgOrderValue), icon: 'ri-line-chart-line', cls: 'text-blue-400 bg-blue-500/10' },
           { label: 'Total Orders', value: String(orders.length), icon: 'ri-bill-line', cls: 'text-orange-400 bg-orange-500/10' },
           { label: 'Cancellation Rate', value: `${cancelRate}%`, icon: 'ri-close-circle-line', cls: 'text-danger bg-danger/10' },
         ].map(k => (
@@ -253,7 +253,7 @@ export default function AnalyticsPage() {
                       </span>
                       <span className="flex items-center gap-3 shrink-0 ml-2">
                         <span className="text-text-muted text-xs">{item.qty} sold</span>
-                        <span className="font-bold text-text-main tabular-nums">{formatUSD(item.revenue)}</span>
+                        <span className="font-bold text-text-main tabular-nums">{formatIDR(item.revenue)}</span>
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full bg-surface-variant overflow-hidden">

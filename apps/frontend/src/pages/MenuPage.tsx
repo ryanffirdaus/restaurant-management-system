@@ -156,9 +156,10 @@ function CategoryPill({ category }: { category: string | null }) {
 type SortKey = "name" | "category" | "price" | "available";
 
 function formatPrice(price: number) {
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat("id-ID", {
     style: "currency",
-    currency: "USD",
+    currency: "IDR",
+    maximumFractionDigits: 0,
   }).format(price);
 }
 
@@ -716,7 +717,7 @@ function MenuForm({
         label="Price"
         type="number"
         placeholder="e.g. 35000"
-        hint="$"
+        hint="Rp"
         required
         min={0}
         value={form.price}

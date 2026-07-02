@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { apiGet, apiPost, apiPatch, apiDelete, formatUSD } from '../../lib/api'
+import { apiGet, apiPost, apiPatch, apiDelete, formatIDR } from '../../lib/api'
 import Icon from '../../components/Icon'
 import Badge from '../../components/Badge'
 import Table from '../../components/Table'
@@ -202,7 +202,7 @@ export default function OrdersPage() {
       key: 'total_price', label: 'Total',
       headerClassName: 'text-right',
       className: 'text-sm font-bold text-right text-text-main whitespace-nowrap tabular-nums',
-      render: o => <span>{o.total_price != null ? formatUSD(o.total_price) : '—'}</span>,
+      render: o => <span>{o.total_price != null ? formatIDR(o.total_price) : '—'}</span>,
     },
     {
       key: 'status', label: 'Status',
@@ -306,7 +306,7 @@ export default function OrdersPage() {
           <>
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancel</Button>
             <Button variant="primary" onClick={handleCreate} disabled={saving || cart.length === 0}>
-              {saving ? 'Placing...' : `Place Order${cart.length > 0 ? ` (${formatUSD(cartTotal)})` : ''}`}
+              {saving ? 'Placing...' : `Place Order${cart.length > 0 ? ` (${formatIDR(cartTotal)})` : ''}`}
             </Button>
           </>
         }
@@ -336,7 +336,7 @@ export default function OrdersPage() {
                   <div key={c.menuItem.id} className="flex items-center justify-between rounded-xl bg-surface-variant px-3 py-2">
                     <div>
                       <span className="text-sm font-medium text-text-main">{c.menuItem.name}</span>
-                      <span className="text-xs text-text-muted ml-2">{formatUSD(c.menuItem.price)} ea.</span>
+                      <span className="text-xs text-text-muted ml-2">{formatIDR(c.menuItem.price)} ea.</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => removeFromCart(c.menuItem.id)} className="w-6 h-6 rounded-lg bg-outline/50 text-text-muted hover:text-danger flex items-center justify-center text-sm font-bold transition-colors">−</button>
@@ -347,7 +347,7 @@ export default function OrdersPage() {
                 ))}
                 <div className="flex justify-between pt-2 border-t border-outline">
                   <span className="text-sm font-bold text-text-muted">Total</span>
-                  <span className="text-sm font-bold text-primary">{formatUSD(cartTotal)}</span>
+                  <span className="text-sm font-bold text-primary">{formatIDR(cartTotal)}</span>
                 </div>
               </div>
             </div>
@@ -368,7 +368,7 @@ export default function OrdersPage() {
                     <p className="text-xs text-text-muted capitalize">{item.category ?? 'Other'}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-sm font-bold text-primary">{formatUSD(item.price)}</span>
+                    <span className="text-sm font-bold text-primary">{formatIDR(item.price)}</span>
                     <Icon name="ri-add-circle-line" className="text-primary opacity-0 group-hover:opacity-100 transition-opacity text-lg" />
                   </div>
                 </button>
@@ -389,7 +389,7 @@ export default function OrdersPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Badge variant={statusVariant(detailOrder.status)}>{detailOrder.status.charAt(0).toUpperCase() + detailOrder.status.slice(1)}</Badge>
-              <span className="text-lg font-bold text-primary">{detailOrder.total_price != null ? formatUSD(detailOrder.total_price) : '—'}</span>
+              <span className="text-lg font-bold text-primary">{detailOrder.total_price != null ? formatIDR(detailOrder.total_price) : '—'}</span>
             </div>
             {detailOrder.notes && (
               <div className="rounded-xl bg-surface-variant p-3">
@@ -403,7 +403,7 @@ export default function OrdersPage() {
                 {(detailOrder.order_items ?? []).map(item => (
                   <div key={item.id} className="flex justify-between rounded-xl bg-surface-variant px-3 py-2">
                     <span className="text-sm text-text-main">{item.quantity}× {item.menu_item?.name ?? item.menu_item_id.slice(0, 8)}</span>
-                    <span className="text-sm font-bold text-text-main">{formatUSD(item.price_at_purchase * item.quantity)}</span>
+                    <span className="text-sm font-bold text-text-main">{formatIDR(item.price_at_purchase * item.quantity)}</span>
                   </div>
                 ))}
               </div>

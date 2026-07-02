@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../context/AuthContext";
-import { apiGet, formatUSD } from "../lib/api";
+import { apiGet, formatIDR } from "../lib/api";
 import WelcomeBanner from "./WelcomeBanner";
 import MetricCard from "./MetricCard";
 import TableStatusGrid from "./TableStatusGrid";
@@ -92,7 +92,7 @@ export default function Dashboard() {
       items: itemsPreview,
       table: tableLabel,
       server: o.customer_name ?? "—",
-      amount: o.total_price != null ? formatUSD(o.total_price) : "—",
+      amount: o.total_price != null ? formatIDR(o.total_price) : "—",
       status: o.status.charAt(0).toUpperCase() + o.status.slice(1),
       time: new Date(o.created_at).toLocaleTimeString([], {
         hour: "2-digit",
@@ -104,7 +104,7 @@ export default function Dashboard() {
   const kpis = [
     {
       title: "Today's Revenue",
-      value: loading ? "..." : formatUSD(todayRevenue),
+      value: loading ? "..." : formatIDR(todayRevenue),
       icon: "ri-money-dollar-circle-line",
       iconClass: "text-primary bg-primary/10",
     },
@@ -137,7 +137,7 @@ export default function Dashboard() {
       <WelcomeBanner
         name={displayName}
         newOrders={activeOrders}
-        revenue={formatUSD(todayRevenue)}
+        revenue={formatIDR(todayRevenue)}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter">

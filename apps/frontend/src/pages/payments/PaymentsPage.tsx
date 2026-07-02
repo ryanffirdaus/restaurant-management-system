@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { apiGet, apiPost, formatUSD } from '../../lib/api'
+import { apiGet, apiPost, formatIDR } from '../../lib/api'
 import Icon from '../../components/Icon'
 import Modal from '../../components/Modal'
 import { Button, Select } from '../../components/ui'
@@ -160,7 +160,7 @@ export default function PaymentsPage() {
       key: 'amount', label: 'Amount',
       headerClassName: 'text-right',
       className: 'text-right font-bold text-sm text-primary tabular-nums whitespace-nowrap',
-      render: p => <span>{formatUSD(Number(p.amount))}</span>,
+      render: p => <span>{formatIDR(Number(p.amount))}</span>,
     },
   ]
 
@@ -175,8 +175,8 @@ export default function PaymentsPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
         {[
-          { label: "Today's Revenue", value: formatUSD(todayRevenue), icon: 'ri-calendar-event-line', cls: 'text-primary bg-primary/10' },
-          { label: 'Total Revenue', value: formatUSD(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-blue-400 bg-blue-500/10' },
+          { label: "Today's Revenue", value: formatIDR(todayRevenue), icon: 'ri-calendar-event-line', cls: 'text-primary bg-primary/10' },
+          { label: 'Total Revenue', value: formatIDR(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-blue-400 bg-blue-500/10' },
           { label: 'Transactions', value: String(payments.length), icon: 'ri-bill-line', cls: 'text-orange-400 bg-orange-500/10' },
           { label: 'Unpaid Orders', value: String(unpaidOrders.length), icon: 'ri-timer-line', cls: 'text-danger bg-danger/10' },
         ].map(k => (
@@ -222,7 +222,7 @@ export default function PaymentsPage() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
                     <span className="text-sm font-bold text-text-main tabular-nums">
-                      {o.total_price != null ? formatUSD(o.total_price) : '—'}
+                      {o.total_price != null ? formatIDR(o.total_price) : '—'}
                     </span>
                     <Icon name="ri-arrow-right-s-line" className="text-xs text-text-muted group-hover:text-primary transition-colors" />
                   </div>
@@ -250,7 +250,7 @@ export default function PaymentsPage() {
                         <Icon name={METHOD_ICON[m.value] ?? 'ri-money-dollar-circle-line'} className="text-base text-text-muted" />
                         {m.label}
                       </span>
-                      <span className="font-bold text-text-main tabular-nums">{formatUSD(m.total)}</span>
+                      <span className="font-bold text-text-main tabular-nums">{formatIDR(m.total)}</span>
                     </div>
                     <div className="h-1.5 rounded-full bg-surface-variant overflow-hidden">
                       <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
@@ -268,7 +268,7 @@ export default function PaymentsPage() {
           <h3 className="font-bold text-text-main">Avg. Order Value</h3>
           <div className="flex-1 flex flex-col justify-center gap-2">
             <p className="text-4xl font-bold text-primary tabular-nums">
-              {loading || payments.length === 0 ? '—' : formatUSD(totalRevenue / payments.length)}
+              {loading || payments.length === 0 ? '—' : formatIDR(totalRevenue / payments.length)}
             </p>
             <p className="text-xs text-text-muted">across {payments.length} transactions</p>
             <div className="h-px bg-outline/50 my-2" />
@@ -279,7 +279,7 @@ export default function PaymentsPage() {
               ].map(s => (
                 <div key={s.label} className="flex justify-between text-sm">
                   <span className="text-text-muted">{s.label} transaction</span>
-                  <span className="font-bold text-text-main tabular-nums">{formatUSD(s.value)}</span>
+                  <span className="font-bold text-text-main tabular-nums">{formatIDR(s.value)}</span>
                 </div>
               ))}
             </div>
@@ -302,12 +302,12 @@ export default function PaymentsPage() {
         open={!!payModal}
         onClose={() => setPayModal(null)}
         title="Process Payment"
-        subtitle={payModal ? `${getTableLabel(payModal.table_id)} • ${formatUSD(payModal.total_price ?? 0)}` : undefined}
+        subtitle={payModal ? `${getTableLabel(payModal.table_id)} • ${formatIDR(payModal.total_price ?? 0)}` : undefined}
         footer={
           <>
             <Button variant="ghost" onClick={() => setPayModal(null)}>Cancel</Button>
             <Button variant="primary" onClick={handlePay} disabled={saving}>
-              {saving ? 'Processing...' : `Confirm Payment ${payModal ? formatUSD(payModal.total_price ?? 0) : ''}`}
+              {saving ? 'Processing...' : `Confirm Payment ${payModal ? formatIDR(payModal.total_price ?? 0) : ''}`}
             </Button>
           </>
         }
@@ -323,7 +323,7 @@ export default function PaymentsPage() {
               ))}
               <div className="pt-2 border-t border-outline flex justify-between font-bold text-sm">
                 <span className="text-text-main">Total</span>
-                <span className="text-primary tabular-nums">{formatUSD(payModal.total_price ?? 0)}</span>
+                <span className="text-primary tabular-nums">{formatIDR(payModal.total_price ?? 0)}</span>
               </div>
             </div>
 

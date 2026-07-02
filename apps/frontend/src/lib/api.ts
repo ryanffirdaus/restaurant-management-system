@@ -67,6 +67,10 @@ export async function apiDelete(path: string): Promise<void> {
   }
 }
 
-export function formatUSD(amount: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
+export function formatIDR(amount: number): string {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    maximumFractionDigits: 0,
+  }).format(amount)
 }
