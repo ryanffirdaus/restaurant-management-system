@@ -72,7 +72,10 @@ export function useEmployees() {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/employees`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (res.ok) setEmployees(await res.json())
+    if (res.ok) {
+      const body = await res.json()
+      setEmployees(body.data ?? body)
+    }
     setLoading(false)
   }, [])
 
@@ -99,7 +102,7 @@ export function useEmployees() {
     setSubmitting(false)
     if (!res.ok) {
       const err = await res.json()
-      setError(err.error)
+      setError(err.message ?? 'Failed to register employee')
       return
     }
 

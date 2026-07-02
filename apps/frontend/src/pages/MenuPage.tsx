@@ -204,7 +204,10 @@ export default function MenuPage() {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/menu`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (res.ok) setItems(await res.json());
+    if (res.ok) {
+      const body = await res.json();
+      setItems(body.data ?? body);
+    }
     setLoading(false);
   }
 
@@ -299,7 +302,7 @@ export default function MenuPage() {
     setSubmitting(false);
     if (!res.ok) {
       const err = await res.json();
-      setError(err.error ?? "Failed to create item");
+      setError(err.message ?? "Failed to create item");
       return;
     }
 
@@ -340,7 +343,7 @@ export default function MenuPage() {
     setSubmitting(false);
     if (!res.ok) {
       const err = await res.json();
-      setError(err.error ?? "Failed to update item");
+      setError(err.message ?? "Failed to update item");
       return;
     }
 
