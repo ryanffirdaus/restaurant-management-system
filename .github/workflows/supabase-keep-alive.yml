@@ -1,0 +1,24 @@
+name: Supabase keep-alive
+
+# Supabase pauses free-tier projects after 7 days with no API activity.
+# Pinging a cheap, always-public read twice a week keeps it comfortably
+# inside that window without touching the app's own deployment.
+on:
+  schedule:
+    - cron: "0 3 * * 0" # Sunday 03:00 UTC
+    - cron: "0 3 * * 3" # Wednesday 03:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl --fail --silent --show-error \
+            "${SUPABASE_URL}/rest/v1/menu_items?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}"
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
