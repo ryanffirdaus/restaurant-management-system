@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { useTheme } from '../../context/ThemeContext'
 import { apiGet, apiPatch } from '../../lib/api'
 import Icon from '../../components/Icon'
+import Button from '../../components/ui/Button'
+import { tones, itemStatus, type Tone } from '../../lib/status'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,19 +62,25 @@ function elapsed(createdAt: string, now: number): string {
   return `${Math.floor(m / 60)}h ${m % 60}m`
 }
 
-function elapsedCls(createdAt: string, now: number, status: ItemStatus): string {
-  if (status === 'ready') return 'text-primary bg-primary/15 border-primary/30'
+// Ticket age chip. Thresholds are this screen's own (5 / 10 min); colours follow ageTone's mapping.
+function elapsedTone(createdAt: string, now: number, status: ItemStatus): Tone {
+  if (status === 'ready') return 'ready'
   const m = (now - +new Date(createdAt)) / 60_000
-  if (m < 5)  return 'text-text-muted bg-surface-variant border-outline'
-  if (m < 10) return 'text-warning bg-warning/15 border-warning/30'
-  return 'text-danger bg-danger/15 border-danger/30'
+  if (m < 5)  return 'neutral'
+  if (m < 10) return 'progress'
+  return 'danger'
+}
+
+function elapsedCls(createdAt: string, now: number, status: ItemStatus): string {
+  const t = tones[elapsedTone(createdAt, now, status)]
+  return `${t.text} ${t.soft} ${t.border}`
 }
 
 const COL_CONFIG = [
-  { status: 'pending'   as ItemStatus, title: 'Queue',    icon: 'ri-timer-line',           color: 'text-text-muted',  bar: 'bg-surface-variant', empty: 'No items queued',     acceptFrom: null           as ItemStatus | null },
-  { status: 'preparing' as ItemStatus, title: 'Cooking',  icon: 'ri-restaurant-line',      color: 'text-orange-400', bar: 'bg-orange-400',      empty: 'Nothing cooking',      acceptFrom: 'pending'      as ItemStatus | null },
-  { status: 'ready'     as ItemStatus, title: 'Ready',    icon: 'ri-checkbox-circle-line', color: 'text-primary',    bar: 'bg-primary',         empty: 'Nothing plated yet',  acceptFrom: 'preparing'    as ItemStatus | null },
-]
+  { status: 'pending'   as ItemStatus, empty: 'No items queued',    acceptFrom: null        as ItemStatus | null },
+  { status: 'preparing' as ItemStatus, empty: 'Nothing cooking',    acceptFrom: 'pending'   as ItemStatus | null },
+  { status: 'ready'     as ItemStatus, empty: 'Nothing plated yet', acceptFrom: 'preparing' as ItemStatus | null },
+].map(c => ({ ...c, ...itemStatus[c.status], t: tones[itemStatus[c.status].tone] }))
 
 // ─── Item Ticket Card ─────────────────────────────────────────────────────────
 
@@ -95,8 +102,7 @@ function ItemTicket({ ticket, now, onAdvance, faded, onDragStart, onDragEnd }: {
     setBusy(false)
   }
 
-  const bar = ticket.itemStatus === 'pending' ? 'bg-surface-variant' : ticket.itemStatus === 'preparing' ? 'bg-orange-400' : 'bg-primary'
-  const qtyColor = ticket.itemStatus === 'preparing' ? 'text-orange-400' : ticket.itemStatus === 'ready' ? 'text-primary' : 'text-text-muted'
+  const tone = tones[itemStatus[ticket.itemStatus].tone]
 
   return (
     <div
@@ -107,26 +113,26 @@ function ItemTicket({ ticket, now, onAdvance, faded, onDragStart, onDragEnd }: {
         onDragStart(ticket.itemId, ticket.itemStatus)
       }}
       onDragEnd={onDragEnd}
-      className={`bg-surface rounded-2xl border overflow-hidden flex flex-col select-none transition-all duration-150 ${
-        faded ? 'opacity-30 scale-[0.97]' : 'border-outline'
+      className={`bg-surface rounded-xl border border-line overflow-hidden flex flex-col select-none transition-all duration-150 ${
+        faded ? 'opacity-30 scale-[0.97]' : ''
       } ${canDrag ? 'cursor-grab active:cursor-grabbing' : ''}`}
     >
-      <div className={`h-1.5 shrink-0 ${bar}`} />
+      <div className={`h-1 shrink-0 ${tone.solid}`} />
 
       {/* Header: table + order + time */}
       <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-2">
         <div className="flex items-start gap-1.5 min-w-0">
-          {canDrag && <Icon name="ri-draggable" className="text-text-muted/30 text-sm mt-0.5 shrink-0" />}
+          {canDrag && <Icon name="ri-draggable" className="text-ink-3 text-base mt-1 shrink-0" />}
           <div className="min-w-0">
-            <p className="text-base font-black text-text-main leading-none">{ticket.tableLabel}</p>
-            <p className="text-[10px] text-text-muted font-mono mt-0.5">#{ticket.orderId.slice(0, 8).toUpperCase()}</p>
+            <p className="text-2xl font-semibold text-ink leading-none num">{ticket.tableLabel}</p>
+            <p className="text-xs text-ink-3 font-mono mt-1">#{ticket.orderId.slice(0, 8).toUpperCase()}</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
-          <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg border tabular-nums ${elapsedCls(ticket.orderCreatedAt, now, ticket.itemStatus)}`}>
+          <span className={`text-sm font-semibold num px-2 py-0.5 rounded border ${elapsedCls(ticket.orderCreatedAt, now, ticket.itemStatus)}`}>
             {elapsed(ticket.orderCreatedAt, now)}
           </span>
-          <span className="text-[10px] text-text-muted">
+          <span className="text-xs text-ink-3 num">
             {new Date(ticket.orderCreatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
@@ -134,36 +140,34 @@ function ItemTicket({ ticket, now, onAdvance, faded, onDragStart, onDragEnd }: {
 
       {/* Item */}
       <div className="px-4 pb-3 flex items-center gap-3">
-        <span className={`text-2xl font-black w-9 text-center shrink-0 leading-none ${qtyColor}`}>
-          {ticket.quantity}
+        <span className={`text-2xl font-semibold num w-10 text-center shrink-0 leading-none ${tone.text}`}>
+          {ticket.quantity}×
         </span>
-        <span className="text-sm font-bold text-text-main leading-snug">{ticket.itemName}</span>
+        <span className="text-lg font-semibold text-ink leading-snug">{ticket.itemName}</span>
       </div>
 
       {/* Order notes */}
       {ticket.orderNotes && (
-        <div className="mx-4 mb-3 bg-warning/10 border border-warning/25 rounded-xl px-3 py-2 flex gap-2 items-start">
-          <Icon name="ri-alarm-warning-line" className="text-warning text-sm shrink-0 mt-0.5" />
-          <p className="text-xs text-text-main italic leading-snug">{ticket.orderNotes}</p>
+        <div className={`mx-4 mb-3 ${tones.progress.soft} border ${tones.progress.border} rounded px-3 py-2 flex gap-2 items-start`}>
+          <Icon name="ri-alarm-warning-line" className={`${tones.progress.text} text-base shrink-0 mt-0.5`} />
+          <p className="text-sm font-medium text-ink leading-snug">{ticket.orderNotes}</p>
         </div>
       )}
 
       {/* Action */}
-      <div className="px-4 pb-4 pt-2 border-t border-outline flex justify-end">
+      <div className="px-4 pb-4 pt-3 border-t border-line flex">
         {ticket.itemStatus === 'pending' && (
-          <button onClick={handleAdvance} disabled={busy}
-            className="flex items-center gap-1.5 bg-orange-500 text-white font-bold text-sm py-2 px-4 rounded-xl active:scale-95 disabled:opacity-50 shadow-md shadow-orange-500/20">
-            {busy ? <Icon name="ri-loader-4-line" className="animate-spin" /> : <><Icon name="ri-restaurant-line" />Cook</>}
-          </button>
+          <Button variant="primary" size="lg" onClick={handleAdvance} disabled={busy} className="w-full">
+            {busy ? <Icon name="ri-loader-4-line" className="animate-spin" /> : <><Icon name="ri-fire-line" />Cook</>}
+          </Button>
         )}
         {ticket.itemStatus === 'preparing' && (
-          <button onClick={handleAdvance} disabled={busy}
-            className="flex items-center gap-1.5 bg-primary text-black font-bold text-sm py-2 px-4 rounded-xl active:scale-95 disabled:opacity-50 shadow-md shadow-primary/20">
+          <Button variant="primary" size="lg" onClick={handleAdvance} disabled={busy} className="w-full">
             {busy ? <Icon name="ri-loader-4-line" className="animate-spin" /> : <><Icon name="ri-checkbox-circle-line" />Plated</>}
-          </button>
+          </Button>
         )}
         {ticket.itemStatus === 'ready' && (
-          <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary/10 border border-primary/30 text-primary text-sm font-bold">
+          <div className={`w-full h-12 flex items-center justify-center gap-2 rounded border ${tone.soft} ${tone.border} ${tone.text} text-base font-semibold`}>
             <Icon name="ri-walk-line" />Waiter picks up
           </div>
         )}
@@ -214,34 +218,34 @@ function KitchenColumn({ col, tickets, now, onAdvance, onDrop, dragRef, onCardDr
 
   return (
     <div
-      className={`flex flex-col min-h-0 rounded-2xl transition-all duration-150 ${
-        active ? 'ring-2 ring-primary ring-offset-2 ring-offset-background bg-primary/5' :
-        canAccept() ? 'ring-1 ring-primary/20 ring-offset-1 ring-offset-background' : ''
+      className={`flex flex-col min-h-0 rounded-xl transition-all duration-150 ${
+        active ? 'ring-2 ring-brand-ink ring-offset-2 ring-offset-background bg-brand/5' :
+        canAccept() ? 'ring-1 ring-brand-ink/30 ring-offset-1 ring-offset-background' : ''
       }`}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDropEvt}
     >
       {/* Header */}
-      <div className="flex items-center gap-2 px-1 pb-3 shrink-0">
-        <div className={`w-8 h-8 rounded-xl bg-current/15 flex items-center justify-center shrink-0 ${col.color}`}>
-          <Icon name={col.icon} className={`text-base ${col.color}`} />
+      <div className={`flex items-center gap-3 px-3 py-2.5 mb-3 shrink-0 rounded-xl border ${col.t.soft} ${col.t.border}`}>
+        <div className={`w-9 h-9 rounded flex items-center justify-center shrink-0 ${col.t.solid}`}>
+          <Icon name={col.icon} className="text-xl text-canvas" />
         </div>
-        <h2 className="font-black text-text-main text-base">{col.title}</h2>
-        {active && <span className="text-[10px] font-black text-primary ml-1 animate-pulse">Drop here ↓</span>}
-        <span className={`ml-auto text-[11px] font-black px-2 py-0.5 rounded-lg bg-current/15 ${col.color}`}>
+        <h2 className={`font-semibold text-xl ${col.t.text}`}>{col.label}</h2>
+        {active && <span className="text-sm font-semibold text-brand-ink ml-1 animate-pulse">Drop here ↓</span>}
+        <span className={`ml-auto min-w-[2.25rem] h-9 px-2 flex items-center justify-center rounded text-xl font-semibold num text-canvas ${col.t.solid}`}>
           {tickets.length}
         </span>
       </div>
 
-      {active && <div className="h-0.5 mx-1 mb-2 rounded-full bg-primary shrink-0" />}
+      {active && <div className="h-1 mx-1 mb-2 rounded-full bg-brand shrink-0" />}
 
       {/* Tickets */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2.5 pb-2 min-h-0">
+      <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pb-2 min-h-0">
         {tickets.length === 0 && !active ? (
-          <div className={`flex flex-col items-center gap-2 py-12 opacity-30 ${col.color}`}>
-            <Icon name={col.icon} className="text-3xl" />
-            <p className="text-xs font-medium text-text-muted">{col.empty}</p>
+          <div className="flex flex-col items-center gap-2 py-12 text-ink-3">
+            <Icon name={col.icon} className="text-4xl" />
+            <p className="text-base font-medium">{col.empty}</p>
           </div>
         ) : (
           <>
@@ -257,15 +261,15 @@ function KitchenColumn({ col, tickets, now, onAdvance, onDrop, dragRef, onCardDr
               />
             ))}
             {active && (
-              <div className="rounded-2xl border-2 border-dashed border-primary/50 h-16 flex items-center justify-center bg-primary/5">
-                <p className="text-primary text-xs font-bold">Release to move here</p>
+              <div className="rounded-xl border-2 border-dashed border-brand-ink/60 h-16 flex items-center justify-center bg-brand/5">
+                <p className="text-brand-ink text-base font-semibold">Release to move here</p>
               </div>
             )}
           </>
         )}
         {tickets.length === 0 && active && (
-          <div className="rounded-2xl border-2 border-dashed border-primary/60 h-24 flex items-center justify-center bg-primary/5">
-            <p className="text-primary text-sm font-bold">Release to move here</p>
+          <div className="rounded-xl border-2 border-dashed border-brand-ink/60 h-24 flex items-center justify-center bg-brand/5">
+            <p className="text-brand-ink text-base font-semibold">Release to move here</p>
           </div>
         )}
       </div>
@@ -277,7 +281,6 @@ function KitchenColumn({ col, tickets, now, onAdvance, onDrop, dragRef, onCardDr
 
 export default function KitchenApp() {
   const { profile, user, logout } = useAuth()
-  const { isDark, toggleTheme } = useTheme()
   const now = useNow(5_000)
   const displayName = (profile?.name as string) ?? user?.email ?? 'Kitchen'
 
@@ -380,73 +383,71 @@ export default function KitchenApp() {
 
   return (
     <div className="h-dvh bg-background flex flex-col overflow-hidden">
-      <header className="shrink-0 h-14 bg-background border-b border-outline flex items-center px-4 gap-3">
-        <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-orange-500/30">
-          <Icon name="ri-restaurant-line" className="text-base" />
-        </div>
+      <header className="shrink-0 h-16 bg-sidebar border-b border-sidebar-line flex items-center px-4 gap-3">
+        <img src="/logo-wordmark-dark.svg" alt="Servio" className="h-6 w-auto shrink-0" />
+        <span className="w-px h-7 bg-sidebar-line shrink-0" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-text-main leading-tight">Kitchen Display</p>
-          <p className="text-[10px] text-orange-400 font-black uppercase tracking-widest leading-none">{displayName}</p>
+          <p className="text-lg font-semibold text-sidebar-ink leading-tight">Kitchen Display</p>
+          <p className="text-xs text-sidebar-ink-2 uppercase font-mono tracking-mono leading-none mt-0.5">{displayName}</p>
         </div>
 
         <div className="hidden sm:flex items-center gap-2">
           {queued.length > 0 && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-surface-variant text-text-muted text-xs font-bold">
-              <Icon name="ri-timer-line" className="text-sm" />{queued.length} queued
+            <span className={`flex items-center gap-2 h-10 px-3 rounded border text-base font-semibold bg-surface border-transparent ${tones.pending.text}`}>
+              <Icon name={itemStatus.pending.icon} className="text-lg" /><span className="num">{queued.length}</span> {itemStatus.pending.label.toLowerCase()}
             </span>
           )}
           {cooking.length > 0 && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-orange-500/10 text-orange-400 text-xs font-bold">
-              <Icon name="ri-restaurant-line" className="text-sm" />{cooking.length} cooking
+            <span className={`flex items-center gap-2 h-10 px-3 rounded border text-base font-semibold bg-surface border-transparent ${tones.progress.text}`}>
+              <Icon name={itemStatus.preparing.icon} className="text-lg" /><span className="num">{cooking.length}</span> {itemStatus.preparing.label.toLowerCase()}
             </span>
           )}
           {ready.length > 0 && (
-            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-bold animate-pulse">
-              <Icon name="ri-checkbox-circle-line" className="text-sm" />{ready.length} ready
+            <span className={`flex items-center gap-2 h-10 px-3 rounded border text-base font-semibold bg-surface border-transparent ${tones.ready.text}`}>
+              <span className="status-pulse is-live" />
+              <Icon name={itemStatus.ready.icon} className="text-lg" /><span className="num">{ready.length}</span> {itemStatus.ready.label.toLowerCase()}
             </span>
           )}
         </div>
 
-        <button onClick={fetchOrders} className="hidden sm:flex items-center gap-1.5 text-[10px] text-text-muted hover:text-text-main font-mono">
-          <Icon name="ri-refresh-line" className="text-sm" />{timeStr}
+        <button onClick={fetchOrders} className="hidden sm:flex items-center gap-1.5 h-10 px-2 rounded text-sm text-sidebar-ink-2 hover:text-sidebar-ink hover:bg-sidebar-raised font-mono num transition-colors duration-150">
+          <Icon name="ri-refresh-line" className="text-base" />{timeStr}
         </button>
-        <button onClick={toggleTheme} className="w-9 h-9 rounded-xl flex items-center justify-center text-text-muted">
-          <Icon name={isDark ? 'ri-sun-line' : 'ri-moon-line'} className="text-lg" />
-        </button>
-        <button onClick={logout} className="w-9 h-9 rounded-xl flex items-center justify-center text-text-muted hover:text-danger">
-          <Icon name="ri-logout-box-r-line" className="text-lg" />
+        <button onClick={logout} aria-label="Log out" className="w-12 h-12 rounded flex items-center justify-center text-sidebar-ink-2 hover:text-sidebar-ink hover:bg-sidebar-raised transition-colors duration-150">
+          <Icon name="ri-logout-box-r-line" className="text-xl" />
         </button>
       </header>
 
       {/* Mobile stats */}
-      <div className="sm:hidden flex items-center gap-2 px-4 py-2 border-b border-outline overflow-x-auto no-scrollbar shrink-0">
-        <span className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-surface-variant text-text-muted text-xs font-bold">
-          <Icon name="ri-timer-line" className="text-xs" />{queued.length}
+      <div className="sm:hidden flex items-center gap-2 px-4 py-2 bg-surface border-b border-line overflow-x-auto no-scrollbar shrink-0">
+        <span className={`shrink-0 flex items-center gap-1.5 h-9 px-2.5 rounded border text-sm font-semibold ${tones.pending.soft} ${tones.pending.border} ${tones.pending.text}`}>
+          <Icon name={itemStatus.pending.icon} className="text-base" /><span className="num">{queued.length}</span>
         </span>
-        <span className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-orange-500/10 text-orange-400 text-xs font-bold">
-          <Icon name="ri-restaurant-line" className="text-xs" />{cooking.length}
+        <span className={`shrink-0 flex items-center gap-1.5 h-9 px-2.5 rounded border text-sm font-semibold ${tones.progress.soft} ${tones.progress.border} ${tones.progress.text}`}>
+          <Icon name={itemStatus.preparing.icon} className="text-base" /><span className="num">{cooking.length}</span>
         </span>
         {ready.length > 0 && (
-          <span className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-bold animate-pulse">
-            <Icon name="ri-checkbox-circle-line" className="text-xs" />{ready.length}
+          <span className={`shrink-0 flex items-center gap-1.5 h-9 px-2.5 rounded border text-sm font-semibold ${tones.ready.soft} ${tones.ready.border} ${tones.ready.text}`}>
+            <span className="status-pulse is-live" />
+            <Icon name={itemStatus.ready.icon} className="text-base" /><span className="num">{ready.length}</span>
           </span>
         )}
-        <button onClick={fetchOrders} className="shrink-0 ml-auto flex items-center gap-1 text-[10px] text-text-muted font-mono">
-          <Icon name="ri-refresh-line" className="text-xs" />{timeStr}
+        <button onClick={fetchOrders} className="shrink-0 ml-auto flex items-center gap-1 text-xs text-ink-2 font-mono num">
+          <Icon name="ri-refresh-line" className="text-sm" />{timeStr}
         </button>
       </div>
 
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
-            <Icon name="ri-loader-4-line" className="text-4xl animate-spin text-orange-400" />
-            <p className="text-sm font-medium text-text-muted">Loading…</p>
+            <Icon name="ri-loader-4-line" className="text-4xl animate-spin text-ink-2" />
+            <p className="text-base font-medium text-ink-2">Loading…</p>
           </div>
         </div>
       ) : (
         <div className="flex-1 grid grid-cols-3 min-h-0 overflow-hidden p-3 gap-3">
           {COL_CONFIG.map((col, i) => (
-            <div key={col.status} className={`flex flex-col min-h-0 overflow-hidden ${i < 2 ? 'border-r border-outline pr-3' : ''}`}>
+            <div key={col.status} className={`flex flex-col min-h-0 overflow-hidden ${i < 2 ? 'border-r border-line pr-3' : ''}`}>
               <KitchenColumn
                 col={col}
                 tickets={byCol[col.status]}

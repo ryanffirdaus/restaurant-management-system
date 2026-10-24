@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
-import { useTheme } from '../../context/ThemeContext'
 import { apiGet, apiPost, apiPatch, formatIDR } from '../../lib/api'
 import Icon from '../../components/Icon'
+import StatusPill from '../../components/StatusPill'
 import { Textarea } from '../../components/ui'
+import { tones, itemStatus, orderStatus, tableStatus, statusMeta } from '../../lib/status'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,6 +22,7 @@ interface MenuItem {
   price: number
   category: string | null
   available: boolean
+  image_url?: string | null
 }
 
 type ItemStatus = 'pending' | 'preparing' | 'ready'
@@ -51,57 +53,17 @@ interface CartItem {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function tableStyle(status: string) {
-  switch (status) {
-    case 'available': return { border: 'border-primary/50', bg: 'bg-primary/10', numBg: 'bg-primary/20', numText: 'text-primary', dot: 'bg-primary', dotLabel: 'text-primary', label: 'Available' }
-    case 'occupied':  return { border: 'border-orange-400/50', bg: 'bg-orange-500/10', numBg: 'bg-orange-500/20', numText: 'text-orange-400', dot: 'bg-orange-400', dotLabel: 'text-orange-400', label: 'Occupied' }
-    case 'reserved':  return { border: 'border-blue-400/50', bg: 'bg-blue-500/10', numBg: 'bg-blue-500/20', numText: 'text-blue-400', dot: 'bg-blue-400', dotLabel: 'text-blue-400', label: 'Reserved' }
-    case 'cleaning':  return { border: 'border-danger/50', bg: 'bg-danger/10', numBg: 'bg-danger/20', numText: 'text-danger', dot: 'bg-danger', dotLabel: 'text-danger', label: 'Cleaning' }
-    default:          return { border: 'border-outline', bg: 'bg-surface-variant', numBg: 'bg-surface-variant', numText: 'text-text-muted', dot: 'bg-text-muted', dotLabel: 'text-text-muted', label: status }
-  }
+const CATEGORY_ICON: Record<string, string> = {
+  'main courses': 'ri-restaurant-2-line', main: 'ri-restaurant-2-line',
+  appetizers: 'ri-bowl-line', appetizer: 'ri-bowl-line',
+  beverages: 'ri-cup-line', drinks: 'ri-cup-line',
+  desserts: 'ri-cake-3-line', dessert: 'ri-cake-3-line',
+  pizza: 'ri-restaurant-line',
+  snacks: 'ri-bowl-line',
 }
 
-function orderStatusStyle(status: string) {
-  switch (status) {
-    case 'pending':   return { bg: 'bg-surface-variant', text: 'text-text-muted' }
-    case 'preparing': return { bg: 'bg-orange-500/15', text: 'text-orange-400' }
-    case 'ready':     return { bg: 'bg-primary/15', text: 'text-primary' }
-    case 'completed': return { bg: 'bg-blue-500/15', text: 'text-blue-400' }
-    case 'cancelled': return { bg: 'bg-danger/15', text: 'text-danger' }
-    default:          return { bg: 'bg-surface-variant', text: 'text-text-muted' }
-  }
-}
-
-const CATEGORY_COLOR: Record<string, string> = {
-  'Main Courses': 'text-emerald-400', 'main': 'text-emerald-400',
-  'Appetizers': 'text-amber-400', 'appetizer': 'text-amber-400',
-  'Beverages': 'text-sky-400', 'drinks': 'text-sky-400',
-  'Desserts': 'text-pink-400', 'dessert': 'text-pink-400',
-  'Pizza': 'text-red-400',
-  'Snacks': 'text-orange-400', 'snacks': 'text-orange-400',
-}
-
-// Waiter can only: cancel a pending order, or mark a ready order as served.
-// pending→preparing and preparing→ready are kitchen-only actions.
-const WAITER_ACTION: Record<string, { label: string; status: string; cls: string } | null> = {
-  pending:   null,
-  preparing: null,
-  ready:     { label: 'Mark Served', status: 'completed', cls: 'bg-blue-500/15 text-blue-400 border-blue-400/30' },
-}
-
-// Informational label shown to waiter for kitchen-controlled statuses
-const STATUS_INFO: Record<string, { icon: string; label: string; cls: string }> = {
-  pending:   { icon: 'ri-time-line',       label: 'Waiting for kitchen…', cls: 'text-text-muted bg-surface-variant' },
-  preparing: { icon: 'ri-restaurant-line', label: 'Kitchen is cooking…',  cls: 'text-orange-400 bg-orange-500/10' },
-}
-
-function StatusPill({ status }: { status: string }) {
-  const s = orderStatusStyle(status)
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wide ${s.bg} ${s.text}`}>
-      {status}
-    </span>
-  )
+function categoryIcon(category: string | null) {
+  return CATEGORY_ICON[(category ?? '').toLowerCase()] ?? 'ri-restaurant-line'
 }
 
 // ─── Table Card ───────────────────────────────────────────────────────────────
@@ -111,7 +73,7 @@ function TableCard({ table, activeOrders, onClick }: {
   activeOrders: Order[]
   onClick: () => void
 }) {
-  const s = tableStyle(table.status)
+  const t = tones[statusMeta(tableStatus, table.status).tone]
   // Count at item level for accurate badges
   const allItems = activeOrders.flatMap(o => o.order_items ?? [])
   const readyCount = allItems.filter(i => i.item_status === 'ready').length
@@ -121,65 +83,47 @@ function TableCard({ table, activeOrders, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`relative rounded-2xl border-2 ${s.border} ${s.bg} p-4 flex flex-col gap-2.5 text-left active:scale-[0.97] transition-transform touch-manipulation w-full min-h-[120px]`}
+      className={`relative overflow-hidden rounded-xl border bg-surface ${hasAlert ? 'border-ready/60' : 'border-line'} pt-5 px-4 pb-4 flex flex-col gap-3 text-left active:scale-[0.97] transition-transform touch-manipulation w-full min-h-[136px]`}
     >
+      {/* Status bar */}
+      <span className={`absolute top-0 left-0 right-0 h-1 ${t.solid}`} />
+
       {/* Alert dot for ready */}
       {hasAlert && (
-        <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-primary animate-pulse shadow-lg shadow-primary/40" />
+        <span className="absolute top-4 right-4 text-ready">
+          <span className="status-pulse is-live" />
+        </span>
       )}
 
-      {/* Number badge */}
-      <div className={`w-12 h-12 rounded-xl ${s.numBg} flex items-center justify-center`}>
-        <span className={`text-lg font-black ${s.numText}`}>{table.table_number}</span>
-      </div>
-
-      {/* Label */}
+      {/* Table number */}
       <div>
-        <p className="font-bold text-text-main text-sm leading-tight">
+        <p className="num text-2xl font-semibold text-ink leading-none">
           T-{String(table.table_number).padStart(2, '0')}
         </p>
-        <p className="text-[11px] text-text-muted">{table.capacity} seats</p>
+        <p className="text-sm text-ink-2 mt-1">
+          <span className="num">{table.capacity}</span> seats
+        </p>
       </div>
 
       {/* Badges row */}
-      <div className="flex flex-wrap gap-1 mt-auto">
+      <div className="flex flex-wrap gap-1.5 mt-auto">
         {readyCount > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] font-bold text-primary bg-primary/15 px-1.5 py-0.5 rounded-md leading-none">
-            <Icon name="ri-checkbox-circle-line" className="text-[10px]" />
-            {readyCount} ready
+          <span className={`inline-flex items-center gap-1 h-7 px-2 rounded-full border text-xs font-semibold ${tones.ready.text} ${tones.ready.soft} ${tones.ready.border}`}>
+            <Icon name={itemStatus.ready.icon} className="text-sm" />
+            <span className="num">{readyCount}</span> ready
           </span>
         )}
         {cookingCount > 0 && (
-          <span className="flex items-center gap-0.5 text-[10px] font-bold text-orange-400 bg-orange-500/15 px-1.5 py-0.5 rounded-md leading-none">
-            <Icon name="ri-restaurant-line" className="text-[10px]" />
-            {cookingCount} cooking
+          <span className={`inline-flex items-center gap-1 h-7 px-2 rounded-full border text-xs font-medium ${tones.progress.text} ${tones.progress.soft} ${tones.progress.border}`}>
+            <Icon name={itemStatus.preparing.icon} className="text-sm" />
+            <span className="num">{cookingCount}</span> cooking
           </span>
         )}
         {!readyCount && !cookingCount && (
-          <span className={`flex items-center gap-1 text-[10px] font-bold ${s.dotLabel}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-            {s.label}
-          </span>
+          <StatusPill map={tableStatus} status={table.status} />
         )}
       </div>
     </button>
-  )
-}
-
-// ─── Item status badge ────────────────────────────────────────────────────────
-
-function ItemStatusDot({ status }: { status: ItemStatus }) {
-  const map: Record<ItemStatus, { dot: string; label: string; text: string }> = {
-    pending:   { dot: 'bg-text-muted',  label: 'Queued',  text: 'text-text-muted' },
-    preparing: { dot: 'bg-orange-400',  label: 'Cooking', text: 'text-orange-400' },
-    ready:     { dot: 'bg-primary',     label: 'Ready',   text: 'text-primary' },
-  }
-  const s = map[status]
-  return (
-    <span className={`flex items-center gap-1 text-[10px] font-bold ${s.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot} ${status === 'ready' ? 'animate-pulse' : ''}`} />
-      {s.label}
-    </span>
   )
 }
 
@@ -196,7 +140,7 @@ function OrderCard({ order, onStatusChange }: {
   const anyReady = items.some(i => i.item_status === 'ready')
 
   // Derive a visual accent from items collectively
-  const accentBar = allReady ? 'bg-primary' : anyReady ? 'bg-primary/40' : order.status === 'pending' ? 'bg-text-muted/25' : 'bg-orange-400'
+  const accentBar = allReady ? tones.ready.solid : anyReady ? 'bg-ready/50' : order.status === 'pending' ? tones.pending.solid : tones.progress.solid
 
   async function markServed() {
     setLoading(true)
@@ -205,66 +149,71 @@ function OrderCard({ order, onStatusChange }: {
   }
 
   return (
-    <div className="card-bg rounded-2xl border border-outline overflow-hidden">
-      <div className={`h-1.5 w-full ${accentBar}`} />
+    <div className={`bg-surface rounded-xl border ${allReady ? 'border-ready/60' : 'border-line'} overflow-hidden`}>
+      <div className={`h-1 w-full ${accentBar}`} />
 
       <div className="p-4 space-y-3">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <span className="font-mono text-xs text-text-muted tracking-wide">
+        <div className="flex items-center justify-between gap-2">
+          <span className="font-mono text-xs text-ink-3 tracking-mono">
             #{order.id.slice(0, 8).toUpperCase()}
           </span>
-          <StatusPill status={order.status} />
+          <StatusPill map={orderStatus} status={order.status} />
         </div>
 
         {/* Per-item rows with individual status */}
         <div className="space-y-2">
-          {items.map(item => (
-            <div key={item.id} className={`flex items-center gap-3 rounded-xl px-3 py-2 ${
-              item.item_status === 'ready' ? 'bg-primary/8 border border-primary/20' :
-              item.item_status === 'preparing' ? 'bg-orange-500/8 border border-orange-400/20' :
-              'bg-surface-variant border border-transparent'
-            }`}>
-              <span className={`font-black text-base w-6 text-center shrink-0 ${
-                item.item_status === 'ready' ? 'text-primary' :
-                item.item_status === 'preparing' ? 'text-orange-400' : 'text-text-muted'
-              }`}>{item.quantity}</span>
-              <span className="text-sm text-text-main flex-1 min-w-0 truncate">
-                {item.menu_item?.name ?? '?'}
-              </span>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs text-text-muted tabular-nums">
-                  {formatIDR(item.quantity * item.price_at_purchase)}
+          {items.map(item => {
+            const st = item.item_status ?? 'pending'
+            const it = tones[statusMeta(itemStatus, st).tone]
+            return (
+              <div key={item.id} className="relative overflow-hidden flex items-center gap-3 rounded-lg bg-raised pl-4 pr-3 py-2.5 min-h-touch">
+                <span className={`absolute left-0 top-0 bottom-0 w-1 ${it.solid}`} />
+                <span className="num font-semibold text-base text-ink w-6 text-center shrink-0">{item.quantity}</span>
+                <span className="text-sm text-ink flex-1 min-w-0 truncate">
+                  {item.menu_item?.name ?? '?'}
                 </span>
-                <ItemStatusDot status={item.item_status ?? 'pending'} />
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="num text-xs text-ink-2">
+                    {formatIDR(item.quantity * item.price_at_purchase)}
+                  </span>
+                  {st === 'ready' ? (
+                    <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${tones.ready.text}`}>
+                      <span className="status-pulse is-live" />
+                      {itemStatus.ready.label}
+                    </span>
+                  ) : (
+                    <StatusPill map={itemStatus} status={st} />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* Notes */}
         {order.notes && (
-          <div className="bg-warning/10 border border-warning/20 rounded-xl px-3 py-2 flex gap-2 items-start">
-            <Icon name="ri-sticky-note-line" className="text-warning text-sm mt-0.5 shrink-0" />
-            <p className="text-xs text-text-main italic">{order.notes}</p>
+          <div className="bg-raised border border-line rounded-lg px-3 py-2 flex gap-2 items-start">
+            <Icon name="ri-sticky-note-line" className="text-ink-2 text-sm mt-0.5 shrink-0" />
+            <p className="text-sm text-ink italic">{order.notes}</p>
           </div>
         )}
 
         {/* Total + time */}
-        <div className="flex justify-between items-center text-xs text-text-muted pt-1 border-t border-outline">
-          <span className="font-bold text-text-main tabular-nums">
+        <div className="flex justify-between items-center text-xs text-ink-3 pt-2 border-t border-line">
+          <span className="num text-base font-semibold text-ink">
             {order.total_price != null ? formatIDR(order.total_price) : '—'}
           </span>
-          <span>{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          <span className="num">{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
 
         {/* Cancel (only while pending — no items started yet) */}
         {order.status === 'pending' && items.every(i => i.item_status === 'pending') && (
           <button
             onClick={() => onStatusChange(order.id, 'cancelled')}
-            className="flex items-center gap-1.5 text-danger text-xs font-bold touch-manipulation self-start"
+            className="inline-flex items-center gap-1.5 h-11 px-3 -ml-3 rounded text-danger text-sm font-medium hover:bg-danger/10 transition-colors touch-manipulation self-start"
           >
-            <Icon name="ri-close-circle-line" className="text-sm" />Cancel order
+            <Icon name="ri-close-circle-line" className="text-base" />Cancel order
           </button>
         )}
 
@@ -273,19 +222,19 @@ function OrderCard({ order, onStatusChange }: {
           <button
             onClick={markServed}
             disabled={loading}
-            className="w-full py-3.5 rounded-xl text-sm font-bold border border-blue-400/30 bg-blue-500/15 text-blue-400 transition-colors active:scale-[0.98] touch-manipulation"
+            className="w-full h-14 rounded text-base font-semibold bg-brand text-brand-foreground hover:bg-brand-hover transition-colors active:scale-[0.98] touch-manipulation disabled:opacity-40"
           >
             {loading
               ? <span className="flex items-center justify-center gap-2"><Icon name="ri-loader-4-line" className="animate-spin" /> Updating…</span>
-              : <span className="flex items-center justify-center gap-2"><Icon name="ri-service-line" className="text-base" />Mark Served</span>
+              : <span className="flex items-center justify-center gap-2"><Icon name="ri-service-line" className="text-lg" />Mark Served</span>
             }
           </button>
         )}
 
         {/* Partial ready prompt */}
         {!allReady && anyReady && (
-          <div className="flex items-center gap-2 text-xs text-text-muted bg-surface-variant rounded-xl px-3 py-2.5">
-            <Icon name="ri-time-line" className="text-sm shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-ink-2 bg-raised rounded-lg px-3 py-2.5">
+            <Icon name="ri-time-line" className="text-base shrink-0" />
             Some items ready — waiting for rest from kitchen
           </div>
         )}
@@ -313,7 +262,6 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
   const [cartOpen, setCartOpen] = useState(false)
   const menuScrollRef = useRef<HTMLDivElement>(null)
 
-  const s = tableStyle(table.status)
   const activeOrders = orders.filter(o => o.status !== 'cancelled' && o.status !== 'completed')
   const cartTotal = cart.reduce((s, c) => s + c.menuItem.price * c.quantity, 0)
   const cartCount = cart.reduce((s, c) => s + c.quantity, 0)
@@ -369,25 +317,23 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
   return (
     <div className="fixed inset-0 z-[200] bg-background flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 h-14 border-b border-outline bg-surface/60 backdrop-blur-sm shrink-0">
+      <div className="flex items-center gap-3 px-4 h-16 border-b border-line bg-surface shrink-0">
         <button
           onClick={onBack}
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-text-muted active:bg-surface-variant touch-manipulation"
+          aria-label="Back to tables"
+          className="w-11 h-11 -ml-2 rounded flex items-center justify-center text-ink-2 hover:text-ink active:bg-raised touch-manipulation"
         >
-          <Icon name="ri-arrow-left-line" className="text-xl" />
+          <Icon name="ri-arrow-left-line" className="text-2xl" />
         </button>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-text-main leading-tight">Table {table.table_number}</p>
-          <p className="text-[11px] text-text-muted">{table.capacity} seats</p>
+          <p className="num text-xl font-semibold text-ink leading-tight">Table {table.table_number}</p>
+          <p className="text-xs text-ink-2"><span className="num">{table.capacity}</span> seats</p>
         </div>
-        <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl ${s.bg} border ${s.border}`}>
-          <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
-          <span className={`text-[10px] font-bold ${s.dotLabel}`}>{s.label}</span>
-        </div>
+        <StatusPill map={tableStatus} status={table.status} size="md" />
       </div>
 
       {/* Tab bar */}
-      <div className="flex border-b border-outline shrink-0">
+      <div className="flex border-b border-line bg-surface shrink-0">
         {[
           { key: 'orders' as const, icon: 'ri-bill-line', label: 'Orders', count: activeOrders.length },
           { key: 'menu' as const, icon: 'ri-restaurant-2-line', label: 'New Order', count: cartCount },
@@ -395,17 +341,17 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`flex-1 py-3.5 flex items-center justify-center gap-2 text-sm font-bold border-b-2 transition-colors touch-manipulation ${
+            className={`flex-1 h-12 flex items-center justify-center gap-2 text-sm font-medium border-b-2 transition-colors duration-150 touch-manipulation ${
               tab === t.key
-                ? 'border-primary text-primary'
-                : 'border-transparent text-text-muted'
+                ? 'border-brand-ink text-brand-ink'
+                : 'border-transparent text-ink-2'
             }`}
           >
             <Icon name={t.icon} className="text-base" />
             {t.label}
             {t.count > 0 && (
-              <span className={`w-5 h-5 rounded-full text-[10px] font-black flex items-center justify-center ${
-                tab === t.key ? 'bg-primary text-black' : 'bg-surface-variant text-text-muted'
+              <span className={`num min-w-[22px] h-[22px] px-1.5 rounded-full text-xs font-semibold flex items-center justify-center ${
+                tab === t.key ? 'bg-brand text-brand-foreground' : 'bg-raised text-ink-2'
               }`}>
                 {t.count}
               </span>
@@ -418,14 +364,14 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
       {tab === 'orders' ? (
         <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 space-y-3 pb-safe">
           {activeOrders.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-20 text-text-muted">
-              <div className="w-16 h-16 rounded-2xl bg-surface-variant flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4 py-20 text-ink-2">
+              <div className="w-16 h-16 rounded-xl bg-raised flex items-center justify-center">
                 <Icon name="ri-bill-line" className="text-3xl opacity-40" />
               </div>
-              <p className="text-sm font-medium">No active orders</p>
+              <p className="text-base">No active orders</p>
               <button
                 onClick={() => setTab('menu')}
-                className="px-5 py-2.5 rounded-xl bg-primary/15 text-primary text-sm font-bold touch-manipulation"
+                className="h-14 px-6 rounded bg-brand text-brand-foreground text-base font-semibold hover:bg-brand-hover transition-colors touch-manipulation"
               >
                 + Create order
               </button>
@@ -437,16 +383,16 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
           {/* Closed orders */}
           {orders.filter(o => o.status === 'completed' || o.status === 'cancelled').length > 0 && (
             <details className="group">
-              <summary className="text-xs text-text-muted py-3 flex items-center gap-1.5 cursor-pointer select-none list-none touch-manipulation">
-                <Icon name="ri-arrow-right-s-line" className="text-sm group-open:rotate-90 transition-transform" />
-                {orders.filter(o => o.status === 'completed' || o.status === 'cancelled').length} closed
+              <summary className="text-sm text-ink-2 min-h-touch flex items-center gap-1.5 cursor-pointer select-none list-none touch-manipulation">
+                <Icon name="ri-arrow-right-s-line" className="text-base group-open:rotate-90 transition-transform" />
+                <span className="num">{orders.filter(o => o.status === 'completed' || o.status === 'cancelled').length}</span> closed
               </summary>
               <div className="mt-1 space-y-2">
                 {orders.filter(o => o.status === 'completed' || o.status === 'cancelled').map(order => (
-                  <div key={order.id} className="rounded-xl border border-outline p-3 opacity-50 flex justify-between items-center gap-2">
-                    <span className="font-mono text-[10px] text-text-muted">#{order.id.slice(0, 8).toUpperCase()}</span>
-                    <StatusPill status={order.status} />
-                    <span className="text-xs text-text-muted tabular-nums ml-auto">
+                  <div key={order.id} className="rounded-xl border border-line bg-surface p-3 flex justify-between items-center gap-2">
+                    <span className="font-mono text-xs text-ink-3">#{order.id.slice(0, 8).toUpperCase()}</span>
+                    <StatusPill map={orderStatus} status={order.status} />
+                    <span className="num text-sm text-ink-2 ml-auto">
                       {order.total_price != null ? formatIDR(order.total_price) : '—'}
                     </span>
                   </div>
@@ -460,12 +406,12 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
           {/* Search + category */}
           <div className="px-4 pt-3 pb-2 space-y-2 shrink-0">
             <div className="relative">
-              <Icon name="ri-search-line" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-base pointer-events-none" />
+              <Icon name="ri-search-line" className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3 text-lg pointer-events-none" />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search menu…"
-                className="w-full pl-9 pr-3 py-2.5 bg-surface-variant border border-outline rounded-xl text-sm text-text-main placeholder:text-text-muted/50 focus:outline-none focus:border-primary/50"
+                className="w-full h-11 pl-10 pr-3 bg-raised border border-line-strong rounded text-base text-ink placeholder:text-ink-3 focus:outline-none focus:border-brand-ink transition-colors duration-150"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
@@ -473,8 +419,8 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
                 <button
                   key={cat}
                   onClick={() => setCatFilter(cat)}
-                  className={`shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors touch-manipulation ${
-                    catFilter === cat ? 'bg-primary text-black' : 'bg-surface-variant text-text-muted'
+                  className={`shrink-0 h-11 px-4 rounded text-sm font-medium transition-colors duration-150 touch-manipulation ${
+                    catFilter === cat ? 'bg-brand text-brand-foreground' : 'bg-raised text-ink-2'
                   }`}
                 >
                   {cat === 'all' ? 'All' : cat}
@@ -487,33 +433,40 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
           <div ref={menuScrollRef} className="flex-1 overflow-y-auto custom-scrollbar px-4 pb-28 space-y-2">
             {filteredMenu.map(item => {
               const inCart = cart.find(c => c.menuItem.id === item.id)
-              const catColor = CATEGORY_COLOR[item.category ?? ''] ?? 'text-text-muted'
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center gap-3 rounded-2xl border px-4 py-3 transition-colors ${
-                    inCart ? 'border-primary/50 bg-primary/5' : 'border-outline bg-surface'
+                  className={`flex items-center gap-3 rounded-xl border bg-surface p-3 transition-colors duration-150 ${
+                    inCart ? 'border-brand-ink' : 'border-line'
                   }`}
                 >
+                  <div className="w-20 aspect-[4/3] rounded-lg overflow-hidden bg-raised shrink-0 flex items-center justify-center">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt="" loading="lazy" className="w-full h-full object-cover" />
+                    ) : (
+                      <Icon name={categoryIcon(item.category)} className="text-2xl text-ink-3" />
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-text-main truncate">{item.name}</p>
+                    <p className="text-base font-medium text-ink truncate">{item.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <span className={`text-[10px] font-bold ${catColor}`}>{item.category ?? 'Other'}</span>
-                      <span className="text-xs font-bold text-primary tabular-nums">{formatIDR(item.price)}</span>
+                      <span className="num text-sm font-semibold text-ink">{formatIDR(item.price)}</span>
+                      <span className="text-xs text-ink-3 truncate">{item.category ?? 'Other'}</span>
                     </div>
                   </div>
                   {inCart ? (
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => setQty(item.id, inCart.quantity - 1)} className="w-8 h-8 rounded-xl bg-surface-variant flex items-center justify-center font-bold text-text-muted active:bg-danger/10 active:text-danger touch-manipulation">−</button>
-                      <span className="w-7 text-center text-sm font-black text-text-main">{inCart.quantity}</span>
-                      <button onClick={() => setQty(item.id, inCart.quantity + 1)} className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center font-bold text-primary touch-manipulation">+</button>
+                      <button onClick={() => setQty(item.id, inCart.quantity - 1)} aria-label="Decrease" className="w-11 h-11 rounded bg-raised flex items-center justify-center text-lg font-semibold text-ink-2 active:bg-danger/10 active:text-danger touch-manipulation">−</button>
+                      <span className="num w-7 text-center text-base font-semibold text-ink">{inCart.quantity}</span>
+                      <button onClick={() => setQty(item.id, inCart.quantity + 1)} aria-label="Increase" className="w-11 h-11 rounded bg-raised border border-line-strong flex items-center justify-center text-lg font-semibold text-ink touch-manipulation">+</button>
                     </div>
                   ) : (
                     <button
                       onClick={() => addToCart(item)}
-                      className="w-10 h-10 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 active:scale-95 touch-manipulation"
+                      aria-label={`Add ${item.name}`}
+                      className="w-11 h-11 rounded bg-raised border border-line-strong text-ink flex items-center justify-center shrink-0 active:scale-95 touch-manipulation"
                     >
-                      <Icon name="ri-add-line" className="text-xl font-bold" />
+                      <Icon name="ri-add-line" className="text-xl" />
                     </button>
                   )}
                 </div>
@@ -523,14 +476,14 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
 
           {/* Cart FAB / bottom bar */}
           {cartCount > 0 && !cartOpen && (
-            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-outline">
+            <div className="fixed bottom-0 left-0 right-0 p-4 bg-background border-t border-line">
               <button
                 onClick={() => setCartOpen(true)}
-                className="w-full bg-primary text-black font-bold text-base py-4 rounded-2xl flex items-center justify-between px-5 active:scale-[0.98] touch-manipulation shadow-lg shadow-primary/30"
+                className="w-full h-14 bg-brand text-brand-foreground hover:bg-brand-hover font-semibold text-base rounded flex items-center justify-between px-5 transition-colors active:scale-[0.98] touch-manipulation"
               >
-                <span className="w-7 h-7 rounded-xl bg-black/20 flex items-center justify-center text-sm font-black">{cartCount}</span>
+                <span className="num min-w-[28px] h-7 px-1.5 rounded bg-brand-foreground/15 flex items-center justify-center text-sm font-semibold">{cartCount}</span>
                 <span>View Order</span>
-                <span className="tabular-nums">{formatIDR(cartTotal)}</span>
+                <span className="num">{formatIDR(cartTotal)}</span>
               </button>
             </div>
           )}
@@ -540,16 +493,16 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
       {/* Cart bottom sheet */}
       {cartOpen && (
         <div className="fixed inset-0 z-[300] flex flex-col justify-end">
-          <div className="flex-1 bg-black/50 backdrop-blur-sm" onClick={() => setCartOpen(false)} />
-          <div className="bg-background rounded-t-3xl border-t border-outline max-h-[85vh] flex flex-col">
+          <div className="flex-1 bg-canvas/70" onClick={() => setCartOpen(false)} />
+          <div className="bg-surface rounded-t-3xl border-t border-line shadow-pop max-h-[85vh] flex flex-col">
             {/* Sheet handle */}
             <div className="flex justify-center pt-3 pb-1 shrink-0">
-              <div className="w-10 h-1 rounded-full bg-outline" />
+              <div className="w-10 h-1 rounded-full bg-line-strong" />
             </div>
 
             <div className="flex items-center justify-between px-5 py-3 shrink-0">
-              <p className="text-base font-bold text-text-main">Your Order</p>
-              <button onClick={() => setCartOpen(false)} className="text-text-muted p-1 touch-manipulation">
+              <p className="text-lg font-semibold text-ink">Your Order</p>
+              <button onClick={() => setCartOpen(false)} aria-label="Close" className="w-11 h-11 -mr-2 rounded flex items-center justify-center text-ink-2 hover:text-ink active:bg-raised touch-manipulation">
                 <Icon name="ri-close-line" className="text-xl" />
               </button>
             </div>
@@ -559,12 +512,12 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
               {cart.map(c => (
                 <div key={c.menuItem.id} className="flex items-center gap-3">
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => setQty(c.menuItem.id, c.quantity - 1)} className="w-8 h-8 rounded-xl bg-surface-variant flex items-center justify-center font-bold text-text-muted touch-manipulation">−</button>
-                    <span className="w-6 text-center text-sm font-black text-text-main">{c.quantity}</span>
-                    <button onClick={() => setQty(c.menuItem.id, c.quantity + 1)} className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center font-bold text-primary touch-manipulation">+</button>
+                    <button onClick={() => setQty(c.menuItem.id, c.quantity - 1)} aria-label="Decrease" className="w-11 h-11 rounded bg-raised flex items-center justify-center text-lg font-semibold text-ink-2 active:bg-danger/10 active:text-danger touch-manipulation">−</button>
+                    <span className="num w-7 text-center text-base font-semibold text-ink">{c.quantity}</span>
+                    <button onClick={() => setQty(c.menuItem.id, c.quantity + 1)} aria-label="Increase" className="w-11 h-11 rounded bg-raised border border-line-strong flex items-center justify-center text-lg font-semibold text-ink touch-manipulation">+</button>
                   </div>
-                  <span className="flex-1 text-sm text-text-main truncate">{c.menuItem.name}</span>
-                  <span className="text-sm font-bold text-primary tabular-nums shrink-0">{formatIDR(c.menuItem.price * c.quantity)}</span>
+                  <span className="flex-1 text-base text-ink truncate">{c.menuItem.name}</span>
+                  <span className="num text-sm font-semibold text-ink shrink-0">{formatIDR(c.menuItem.price * c.quantity)}</span>
                 </div>
               ))}
 
@@ -580,18 +533,18 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
               </div>
 
               {/* Total */}
-              <div className="flex justify-between items-center py-3 border-t border-outline">
-                <span className="font-semibold text-text-muted">Total</span>
-                <span className="text-xl font-black text-primary tabular-nums">{formatIDR(cartTotal)}</span>
+              <div className="flex justify-between items-center py-3 border-t border-line">
+                <span className="font-medium text-ink-2">Total</span>
+                <span className="num text-2xl font-semibold text-ink">{formatIDR(cartTotal)}</span>
               </div>
             </div>
 
             {/* Place order button */}
-            <div className="px-5 py-4 border-t border-outline shrink-0">
+            <div className="px-5 py-4 border-t border-line shrink-0">
               <button
                 onClick={placeOrder}
                 disabled={saving}
-                className="w-full bg-primary text-black font-bold text-base py-4 rounded-2xl active:scale-[0.98] touch-manipulation shadow-lg shadow-primary/30 disabled:opacity-50"
+                className="num w-full h-14 bg-brand text-brand-foreground hover:bg-brand-hover font-semibold text-base rounded transition-colors active:scale-[0.98] touch-manipulation disabled:opacity-40"
               >
                 {saving ? 'Placing order…' : `Place Order · ${formatIDR(cartTotal)}`}
               </button>
@@ -607,7 +560,6 @@ function SessionScreen({ table, orders, menuItems, userId, onBack, onRefresh }: 
 
 export default function WaiterApp() {
   const { user, profile, logout } = useAuth()
-  const { isDark, toggleTheme } = useTheme()
 
   const displayName = (profile?.name as string) ?? user?.email ?? 'Waiter'
 
@@ -696,48 +648,42 @@ export default function WaiterApp() {
   return (
     <div className="min-h-dvh bg-background flex flex-col">
       {/* Top bar */}
-      <header className="fixed top-0 left-0 right-0 z-40 h-14 bg-background/95 backdrop-blur-sm border-b border-outline flex items-center px-4 gap-3">
+      <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-sidebar border-b border-sidebar-line flex items-center px-4 gap-3">
         {/* Logo */}
-        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-black font-black text-sm shrink-0 shadow-lg shadow-primary/30">
-          S
-        </div>
+        <img src="/logo-wordmark-dark.svg" alt="Servio" className="h-6 w-auto shrink-0" />
+        <span className="w-px h-7 bg-sidebar-line shrink-0" aria-hidden="true" />
 
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-text-main leading-tight truncate">{displayName}</p>
-          <p className="text-[10px] text-primary font-black uppercase tracking-widest leading-none">Waiter</p>
+          <p className="text-base font-medium text-sidebar-ink leading-tight truncate">{displayName}</p>
+          <p className="text-xs text-sidebar-ink-2 uppercase font-mono tracking-mono leading-none mt-0.5">Waiter</p>
         </div>
 
         {/* Ready badge */}
         {readyCount > 0 && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-primary/10 border border-primary/30">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            <span className="text-xs font-black text-primary">{readyCount} ready</span>
+          <div className={`flex items-center gap-2 h-9 px-3 rounded-full border bg-surface border-transparent ${tones.ready.text}`}>
+            <span className="status-pulse is-live" />
+            <span className="text-sm font-semibold"><span className="num">{readyCount}</span> ready</span>
           </div>
         )}
 
-        <button onClick={toggleTheme} className="w-9 h-9 rounded-xl flex items-center justify-center text-text-muted touch-manipulation">
-          <Icon name={isDark ? 'ri-sun-line' : 'ri-moon-line'} className="text-lg" />
-        </button>
-        <button onClick={logout} className="w-9 h-9 rounded-xl flex items-center justify-center text-text-muted hover:text-danger touch-manipulation">
-          <Icon name="ri-logout-box-r-line" className="text-lg" />
+        <button onClick={logout} aria-label="Log out" className="w-11 h-11 -mr-2 rounded flex items-center justify-center text-sidebar-ink-2 hover:text-sidebar-ink active:bg-sidebar-raised touch-manipulation">
+          <Icon name="ri-logout-box-r-line" className="text-xl" />
         </button>
       </header>
 
-      <div className="pt-14 flex-1 flex flex-col">
+      <div className="pt-16 flex-1 flex flex-col">
         {/* Stats row */}
         <div className="px-4 pt-4 pb-3 grid grid-cols-3 gap-2.5">
           {[
-            { label: 'Tables', value: tables.length, icon: 'ri-layout-grid-line', color: 'text-text-main' },
-            { label: 'Active', value: activeCount, icon: 'ri-timer-line', color: 'text-orange-400' },
-            { label: 'Ready', value: readyCount, icon: 'ri-checkbox-circle-line', color: 'text-primary' },
+            { label: 'Tables', value: tables.length, icon: 'ri-layout-grid-line', color: 'text-ink-2' },
+            { label: 'Active', value: activeCount, icon: 'ri-timer-line', color: tones.progress.text },
+            { label: 'Ready', value: readyCount, icon: itemStatus.ready.icon, color: tones.ready.text },
           ].map(s => (
-            <div key={s.label} className="card-bg border border-outline rounded-2xl px-3 py-3 flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-xl bg-current/10 flex items-center justify-center shrink-0 ${s.color}`}>
-                <Icon name={s.icon} className={`text-base ${s.color}`} />
-              </div>
+            <div key={s.label} className="bg-surface border border-line rounded-xl px-3 py-3 flex items-center gap-2.5">
+              <Icon name={s.icon} className={`text-xl shrink-0 ${s.color}`} />
               <div>
-                <p className={`text-lg font-black leading-none ${s.color}`}>{loading ? '–' : s.value}</p>
-                <p className="text-[10px] text-text-muted font-medium">{s.label}</p>
+                <p className="num text-xl font-semibold leading-none text-ink">{loading ? '–' : s.value}</p>
+                <p className="text-xs text-ink-2 mt-1">{s.label}</p>
               </div>
             </div>
           ))}
@@ -751,12 +697,12 @@ export default function WaiterApp() {
               <button
                 key={f.value}
                 onClick={() => setFilterStatus(f.value)}
-                className={`shrink-0 px-4 py-2 rounded-xl text-xs font-bold transition-colors touch-manipulation flex items-center gap-1.5 ${
-                  filterStatus === f.value ? 'bg-primary text-black' : 'bg-surface-variant text-text-muted'
+                className={`shrink-0 h-11 px-4 rounded text-sm font-medium transition-colors duration-150 touch-manipulation flex items-center gap-1.5 ${
+                  filterStatus === f.value ? 'bg-brand text-brand-foreground' : 'bg-raised text-ink-2'
                 }`}
               >
                 {f.label}
-                <span className={`text-[10px] font-black opacity-70 ${filterStatus === f.value ? 'text-black' : ''}`}>{cnt}</span>
+                <span className="num text-xs font-semibold opacity-70">{cnt}</span>
               </button>
             )
           })}
@@ -766,7 +712,7 @@ export default function WaiterApp() {
         <div className="flex-1 px-4 pb-6">
           {/* Refresh indicator */}
           {refreshing && (
-            <div className="flex items-center justify-center gap-2 py-2 text-text-muted text-xs mb-2">
+            <div className="flex items-center justify-center gap-2 py-2 text-ink-3 text-xs mb-2">
               <Icon name="ri-loader-4-line" className="text-sm animate-spin" />
               Refreshing…
             </div>
@@ -774,12 +720,12 @@ export default function WaiterApp() {
 
           {loading ? (
             <div className="flex items-center justify-center py-24">
-              <Icon name="ri-loader-4-line" className="text-3xl text-text-muted animate-spin" />
+              <Icon name="ri-loader-4-line" className="text-3xl text-ink-3 animate-spin" />
             </div>
           ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-24 text-text-muted">
+            <div className="flex flex-col items-center gap-3 py-24 text-ink-2">
               <Icon name="ri-layout-grid-line" className="text-4xl opacity-30" />
-              <p className="text-sm">No tables</p>
+              <p className="text-base">No tables</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">

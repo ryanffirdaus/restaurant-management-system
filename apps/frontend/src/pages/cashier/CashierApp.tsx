@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { apiGet, apiPost, formatIDR } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
+import StatusPill from '../../components/StatusPill'
+import { orderStatus } from '../../lib/status'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,19 +104,19 @@ function OrderList({
 }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-5 border-b border-outline shrink-0">
-        <h1 className="text-lg font-bold text-text-main">Cashier</h1>
-        <p className="text-xs text-text-muted mt-0.5">
-          {orders.length} order{orders.length !== 1 ? 's' : ''} pending payment
+      <div className="px-4 py-5 border-b border-line shrink-0">
+        <h1 className="text-lg font-semibold text-ink">Orders to pay</h1>
+        <p className="text-sm text-ink-2 mt-0.5">
+          <span className="num font-semibold text-ink">{orders.length}</span> order{orders.length !== 1 ? 's' : ''} pending payment
         </p>
       </div>
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <div className="p-6 text-center text-text-muted text-sm">Loading…</div>
+          <div className="p-6 text-center text-ink-3 text-sm">Loading…</div>
         ) : orders.length === 0 ? (
-          <div className="p-10 text-center flex flex-col items-center gap-2 text-text-muted">
-            <i className="ri-checkbox-circle-line text-4xl text-primary/60" />
-            <p className="text-sm font-medium">All orders paid</p>
+          <div className="p-10 text-center flex flex-col items-center gap-2 text-ink-2">
+            <i className="ri-checkbox-circle-line text-4xl text-ready" />
+            <p className="text-sm">All orders paid</p>
           </div>
         ) : (
           orders.map(o => {
@@ -124,20 +126,24 @@ function OrderList({
               <button
                 key={o.id}
                 onClick={() => onSelect(o)}
-                className={`w-full text-left px-4 py-4 border-b border-outline transition-colors ${
+                aria-pressed={isSelected}
+                className={`w-full min-h-touch text-left pl-3 pr-4 py-4 border-b border-line border-l-4 transition-colors duration-150 ${
                   isSelected
-                    ? 'bg-primary/10 border-l-2 border-l-primary'
-                    : 'hover:bg-surface-variant/40'
+                    ? 'bg-brand/10 border-l-brand'
+                    : 'border-l-transparent hover:bg-raised'
                 }`}
               >
                 <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-bold text-text-main">{tableLabel(o)}</p>
-                    <p className="text-xs text-text-muted mt-0.5">
-                      {itemCount} item{itemCount !== 1 ? 's' : ''} • {elapsed(o.created_at)}
+                  <div className="min-w-0">
+                    <p className="text-base font-semibold text-ink truncate">{tableLabel(o)}</p>
+                    <p className="text-sm text-ink-2 mt-0.5">
+                      <span className="num">{itemCount}</span> item{itemCount !== 1 ? 's' : ''} • {elapsed(o.created_at)}
                     </p>
+                    <div className="mt-2">
+                      <StatusPill map={orderStatus} status={o.status} />
+                    </div>
                   </div>
-                  <span className="text-sm font-bold text-primary tabular-nums shrink-0 ml-2">
+                  <span className="num text-base font-semibold text-ink shrink-0 ml-2">
                     {formatIDR(o.total_price ?? 0)}
                   </span>
                 </div>
@@ -308,19 +314,35 @@ export default function CashierApp() {
   const change = cashNum - total
   const activeChannel = channels.find(c => c.id === method)
 
+  const secondaryBtn =
+    'flex-1 h-12 rounded border border-line-strong bg-raised text-ink text-base font-medium hover:bg-line disabled:opacity-40 transition-colors duration-150'
+  const primaryBtn =
+    'w-full h-14 rounded bg-brand text-brand-foreground text-base font-semibold hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150'
+  const sectionLabel = 'text-xs uppercase font-mono tracking-mono text-ink-3'
+
   return (
     <div className="flex h-screen bg-background flex-col overflow-hidden">
       {/* ---- Header ---- */}
-      <header className="shrink-0 h-14 bg-background border-b border-outline flex items-center px-4 gap-3">
-        <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-black text-sm shrink-0 shadow-lg shadow-green-500/30">
-          <i className="ri-receipt-line text-base" />
-        </div>
+      <header className="shrink-0 h-14 bg-sidebar border-b border-sidebar-line flex items-center px-4 gap-3">
+        <img src="/logo-wordmark-dark.svg" alt="Servio" className="h-6 w-auto shrink-0" />
+        <span className="w-px h-7 bg-sidebar-line shrink-0" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-text-main leading-tight">Cashier</p>
-          <p className="text-[10px] text-green-400 font-black uppercase tracking-widest leading-none">Payment</p>
+          <p className="text-base font-semibold text-sidebar-ink leading-tight">Cashier</p>
+          <p className="text-xs text-sidebar-ink-2 uppercase font-mono tracking-mono leading-none">Payment</p>
         </div>
-        <button onClick={logout} className="w-9 h-9 rounded-xl flex items-center justify-center text-text-muted hover:text-danger">
-          <i className="ri-logout-box-r-line text-lg" />
+        <span
+          title="Online payments run against Midtrans's sandbox environment — QRIS/GoPay/VA codes are real and scannable, but no actual money moves."
+          className="hidden sm:inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-surface border border-transparent text-progress text-xs font-medium shrink-0"
+        >
+          <i className="ri-flask-line text-sm" /> Sandbox — no real charges
+        </span>
+        <button
+          onClick={logout}
+          aria-label="Log out"
+          title="Log out"
+          className="w-11 h-11 rounded flex items-center justify-center text-sidebar-ink-2 hover:text-sidebar-ink hover:bg-sidebar-raised transition-colors duration-150"
+        >
+          <i className="ri-logout-box-r-line text-xl" />
         </button>
       </header>
 
@@ -330,7 +352,7 @@ export default function CashierApp() {
       {/* Left — order list */}
       {/* ------------------------------------------------------------------ */}
       <div
-        className={`w-80 shrink-0 border-r border-outline card-bg flex flex-col ${
+        className={`w-80 shrink-0 border-r border-line bg-surface flex flex-col ${
           selected ? 'hidden md:flex' : 'flex'
         }`}
       >
@@ -347,9 +369,9 @@ export default function CashierApp() {
       {/* ------------------------------------------------------------------ */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {!selected ? (
-          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-text-muted">
-            <i className="ri-bill-line text-5xl opacity-30" />
-            <p className="text-sm">Select an order to process payment</p>
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 text-ink-3">
+            <i className="ri-bill-line text-5xl" />
+            <p className="text-base text-ink-2">Select an order to process payment</p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
@@ -357,34 +379,37 @@ export default function CashierApp() {
             {/* Mobile back */}
             <button
               onClick={() => { setSelected(null); resetPayment() }}
-              className="md:hidden mb-4 flex items-center gap-1.5 text-sm text-text-muted hover:text-text-main"
+              className="md:hidden mb-4 -ml-2 h-11 px-2 rounded flex items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink hover:bg-raised transition-colors duration-150"
             >
-              <i className="ri-arrow-left-line" /> All Orders
+              <i className="ri-arrow-left-line text-base" /> All Orders
             </button>
 
             {/* Header */}
-            <div className="mb-6">
-              <h2 className="text-xl font-bold text-text-main">{tableLabel(selected)}</h2>
-              <p className="text-sm text-text-muted">
-                {elapsed(selected.created_at)} • #{selected.id.slice(0, 8).toUpperCase()}
-              </p>
+            <div className="mb-6 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-2xl font-semibold text-ink">{tableLabel(selected)}</h2>
+                <p className="text-sm text-ink-2 mt-0.5">
+                  {elapsed(selected.created_at)} • <span className="font-mono">#{selected.id.slice(0, 8).toUpperCase()}</span>
+                </p>
+              </div>
+              <StatusPill map={orderStatus} status={selected.status} size="md" className="shrink-0" />
             </div>
 
             {/* Order summary */}
-            <div className="card-bg rounded-2xl border border-outline p-4 mb-6 space-y-2">
+            <div className="bg-surface rounded-xl border border-line p-4 mb-6 space-y-2">
               {(selected.order_items ?? []).map(item => (
-                <div key={item.id} className="flex justify-between text-sm">
-                  <span className="text-text-muted">
-                    {item.quantity}× {item.menu_item?.name ?? '?'}
+                <div key={item.id} className="flex justify-between gap-3 text-sm">
+                  <span className="text-ink-2">
+                    <span className="num">{item.quantity}×</span> {item.menu_item?.name ?? '?'}
                   </span>
-                  <span className="text-text-main font-medium tabular-nums">
+                  <span className="num text-ink">
                     {formatIDR(item.price_at_purchase * item.quantity)}
                   </span>
                 </div>
               ))}
-              <div className="pt-2 border-t border-outline flex justify-between font-bold text-sm">
-                <span className="text-text-main">Total</span>
-                <span className="text-primary tabular-nums text-base">{formatIDR(total)}</span>
+              <div className="pt-3 mt-1 border-t border-line flex justify-between items-end gap-3">
+                <span className="text-sm font-semibold uppercase font-mono tracking-mono text-ink-2 pb-1">Total</span>
+                <span className="num text-4xl font-semibold text-ink">{formatIDR(total)}</span>
               </div>
             </div>
 
@@ -393,68 +418,75 @@ export default function CashierApp() {
               <div className="space-y-5">
                 {/* Cash */}
                 <div className="space-y-2">
-                  <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                  <p className={sectionLabel}>
                     Cash
                   </p>
                   <button
                     onClick={() => setMethod('cash')}
-                    className={`w-full flex items-center gap-4 px-4 py-4 rounded-xl border transition-all text-left ${
+                    aria-pressed={method === 'cash'}
+                    className={`w-full min-h-touch flex items-center gap-4 px-4 py-4 rounded-xl border-2 transition-colors duration-150 text-left ${
                       method === 'cash'
-                        ? 'border-primary bg-primary/10'
-                        : 'border-outline hover:border-primary/40 hover:bg-surface-variant/30'
+                        ? 'border-brand-ink bg-brand/10'
+                        : 'border-line bg-surface hover:border-line-strong hover:bg-raised'
                     }`}
                   >
                     <div
-                      className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                        method === 'cash' ? 'bg-primary text-white' : 'bg-surface-variant text-text-muted'
+                      className={`w-11 h-11 rounded flex items-center justify-center text-xl shrink-0 ${
+                        method === 'cash' ? 'bg-brand text-brand-foreground' : 'bg-raised text-ink-2'
                       }`}
                     >
                       <i className="ri-money-dollar-circle-line" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-text-main">Cash</p>
-                      <p className="text-xs text-text-muted">Accept physical cash payment</p>
+                      <p className="text-base font-semibold text-ink">Cash</p>
+                      <p className="text-sm text-ink-2">Accept physical cash payment</p>
                     </div>
                     {method === 'cash' && (
-                      <i className="ri-check-line ml-auto text-primary text-lg shrink-0" />
+                      <i className="ri-checkbox-circle-fill ml-auto text-brand-ink text-2xl shrink-0" />
                     )}
                   </button>
                 </div>
 
                 {/* Midtrans channels — grouped by payment type */}
+                {channels.length > 0 && (
+                  <p className="sm:hidden flex items-center gap-1.5 text-xs text-progress font-medium">
+                    <i className="ri-flask-line text-sm" /> Sandbox mode — no real charges
+                  </p>
+                )}
                 {GROUP_ORDER.map(group => {
                   const groupChannels = channels.filter(c => c.group === group)
                   if (groupChannels.length === 0) return null
                   return (
                     <div key={group} className="space-y-2">
-                      <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                      <p className={sectionLabel}>
                         {GROUP_LABELS[group]}
                       </p>
                       {groupChannels.map(c => (
                         <button
                           key={c.id}
                           onClick={() => setMethod(c.id)}
-                          className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl border transition-all text-left ${
+                          aria-pressed={method === c.id}
+                          className={`w-full min-h-touch flex items-center gap-4 px-4 py-3.5 rounded-xl border-2 transition-colors duration-150 text-left ${
                             method === c.id
-                              ? 'border-primary bg-primary/10'
-                              : 'border-outline hover:border-primary/40 hover:bg-surface-variant/30'
+                              ? 'border-brand-ink bg-brand/10'
+                              : 'border-line bg-surface hover:border-line-strong hover:bg-raised'
                           }`}
                         >
                           <div
-                            className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 ${
-                              method === c.id ? 'bg-primary text-white' : 'bg-surface-variant text-text-muted'
+                            className={`w-11 h-11 rounded flex items-center justify-center text-xl shrink-0 ${
+                              method === c.id ? 'bg-brand text-brand-foreground' : 'bg-raised text-ink-2'
                             }`}
                           >
                             <i className={c.icon} />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-sm font-semibold text-text-main">{c.label}</p>
-                            <p className="text-xs text-text-muted truncate">
+                            <p className="text-base font-semibold text-ink">{c.label}</p>
+                            <p className="text-sm text-ink-2 truncate">
                               {c.kind === 'qr' ? 'Scan QR code' : c.instructions}
                             </p>
                           </div>
                           {method === c.id && (
-                            <i className="ri-check-line ml-auto text-primary text-lg shrink-0" />
+                            <i className="ri-checkbox-circle-fill ml-auto text-brand-ink text-2xl shrink-0" />
                           )}
                         </button>
                       ))}
@@ -468,7 +500,7 @@ export default function CashierApp() {
                     else handleChannelInit(method)
                   }}
                   disabled={processing}
-                  className="w-full mt-4 py-4 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  className={`${primaryBtn} mt-4`}
                 >
                   {processing
                     ? 'Processing…'
@@ -480,17 +512,17 @@ export default function CashierApp() {
             {/* ---- step: cash ---- */}
             {step === 'confirm-cash' && (
               <div className="space-y-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                <p className={sectionLabel}>
                   Cash Payment
                 </p>
                 <div>
-                  <label className="text-xs text-text-muted mb-1 block">Amount Received (IDR)</label>
+                  <label className="text-sm font-medium text-ink-2 mb-1.5 block">Amount Received (IDR)</label>
                   <input
                     type="number"
                     value={cashReceived}
                     onChange={e => setCashReceived(e.target.value)}
                     placeholder={String(Math.ceil(total))}
-                    className="w-full bg-surface-variant border border-outline rounded-xl px-4 py-3 text-text-main text-lg font-bold focus:outline-none focus:border-primary"
+                    className="num w-full h-14 bg-raised border border-line-strong rounded px-4 text-ink text-2xl font-semibold placeholder:text-ink-3 focus:outline-none focus:border-brand-ink transition-colors duration-150"
                     autoFocus
                   />
                 </div>
@@ -507,7 +539,7 @@ export default function CashierApp() {
                       <button
                         key={v}
                         onClick={() => setCashReceived(String(v))}
-                        className="py-2 rounded-lg bg-surface-variant text-xs font-semibold text-text-muted hover:bg-outline/40 transition-colors"
+                        className="num h-12 rounded border border-line-strong bg-raised text-sm font-semibold text-ink hover:bg-line transition-colors duration-150"
                       >
                         {formatIDR(v)}
                       </button>
@@ -516,26 +548,27 @@ export default function CashierApp() {
 
                 {cashNum > 0 && (
                   <div
-                    className={`rounded-xl p-4 text-sm space-y-1.5 ${
+                    className={`rounded-xl p-4 text-sm space-y-1.5 border ${
                       change >= 0
-                        ? 'bg-green-500/10 border border-green-500/20'
-                        : 'bg-red-500/10 border border-red-500/20'
+                        ? 'bg-ready/10 border-ready/40'
+                        : 'bg-danger/10 border-danger/40'
                     }`}
                   >
                     <div className="flex justify-between">
-                      <span className="text-text-muted">Total</span>
-                      <span className="font-bold text-text-main tabular-nums">{formatIDR(total)}</span>
+                      <span className="text-ink-2">Total</span>
+                      <span className="num font-semibold text-ink">{formatIDR(total)}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-text-muted">Received</span>
-                      <span className="font-bold text-text-main tabular-nums">{formatIDR(cashNum)}</span>
+                      <span className="text-ink-2">Received</span>
+                      <span className="num font-semibold text-ink">{formatIDR(cashNum)}</span>
                     </div>
-                    <div className="flex justify-between pt-1.5 border-t border-outline/50">
-                      <span className={`font-bold ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className={`flex justify-between items-center pt-2 border-t ${change >= 0 ? 'border-ready/40' : 'border-danger/40'}`}>
+                      <span className={`flex items-center gap-1.5 text-base font-semibold ${change >= 0 ? 'text-ready' : 'text-danger'}`}>
+                        <i className={change >= 0 ? 'ri-hand-coin-line' : 'ri-error-warning-fill'} />
                         {change >= 0 ? 'Change' : 'Short'}
                       </span>
                       <span
-                        className={`font-bold tabular-nums ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                        className={`num text-2xl font-semibold ${change >= 0 ? 'text-ready' : 'text-danger'}`}
                       >
                         {formatIDR(Math.abs(change))}
                       </span>
@@ -546,14 +579,14 @@ export default function CashierApp() {
                 <div className="flex gap-3">
                   <button
                     onClick={resetPayment}
-                    className="flex-1 py-3 rounded-xl border border-outline text-sm font-semibold text-text-muted hover:bg-surface-variant transition-colors"
+                    className={`${secondaryBtn} h-14`}
                   >
                     Back
                   </button>
                   <button
                     onClick={handleCashConfirm}
                     disabled={processing || (cashNum > 0 && change < 0)}
-                    className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    className={`${primaryBtn} flex-[2]`}
                   >
                     {processing ? 'Processing…' : 'Confirm Payment'}
                   </button>
@@ -564,13 +597,13 @@ export default function CashierApp() {
             {/* ---- step: payment waiting (inline QR / payment code) ---- */}
             {step === 'code-waiting' && payment && (
               <div className="space-y-4">
-                <p className="text-xs font-bold uppercase tracking-widest text-text-muted">
+                <p className={sectionLabel}>
                   {payment.channelLabel}
                 </p>
 
                 {/* Payment card */}
-                <div className="rounded-2xl border border-outline p-6 flex flex-col items-center gap-4 text-center card-bg">
-                  <p className="text-xs text-text-muted">{payment.instructions}</p>
+                <div className="rounded-xl border border-line p-6 flex flex-col items-center gap-4 text-center bg-surface">
+                  <p className="text-sm text-ink-2">{payment.instructions}</p>
 
                   {payment.kind === 'qr' && payment.qrUrl ? (
                     <div className="bg-white rounded-xl p-4">
@@ -583,15 +616,15 @@ export default function CashierApp() {
                   ) : payment.paymentCode ? (
                     <button
                       onClick={copyCode}
-                      className="group w-full rounded-xl bg-surface-variant border border-outline px-4 py-5 hover:border-primary/50 transition-colors"
+                      className="group w-full rounded bg-raised border border-line-strong px-4 py-5 hover:border-brand-ink transition-colors duration-150"
                       title="Tap to copy"
                     >
-                      <p className="font-mono text-2xl md:text-3xl font-bold text-text-main tracking-wider tabular-nums break-all">
+                      <p className="num font-mono text-2xl md:text-3xl font-semibold text-ink tracking-mono break-all">
                         {formatPaymentCode(payment.paymentCode)}
                       </p>
-                      <p className="text-[11px] mt-2 text-text-muted group-hover:text-primary transition-colors">
+                      <p className="text-sm mt-2 text-ink-2 group-hover:text-ink transition-colors duration-150">
                         {copied ? (
-                          <span className="text-primary font-semibold">
+                          <span className="text-ready font-medium">
                             <i className="ri-check-line" /> Copied!
                           </span>
                         ) : (
@@ -601,31 +634,31 @@ export default function CashierApp() {
                     </button>
                   ) : null}
 
-                  <div className="flex items-center gap-4 text-xs text-text-muted">
-                    <span className="font-bold text-primary text-sm tabular-nums">{formatIDR(total)}</span>
-                    {payment.expiresAt && <span>{expiryLabel(payment.expiresAt)}</span>}
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="num text-4xl font-semibold text-ink">{formatIDR(total)}</span>
+                    {payment.expiresAt && <span className="text-sm text-ink-2">{expiryLabel(payment.expiresAt)}</span>}
                   </div>
 
-                  <div className="flex items-center gap-2 text-xs text-text-muted">
-                    <i className="ri-loader-4-line animate-spin text-blue-400" />
+                  <div className="inline-flex items-center gap-2 h-8 px-3 rounded-full bg-progress/10 border border-progress/40 text-progress text-sm font-medium">
+                    <i className="ri-loader-4-line animate-spin text-base" />
                     Waiting for payment — confirms automatically
                   </div>
                 </div>
 
-                <p className="text-xs text-text-muted text-center">
+                <p className="text-xs text-ink-3 text-center">
                   If the webhook is not reachable (development/testing), use the manual confirm below.
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={resetPayment}
-                    className="flex-1 py-3 rounded-xl border border-outline text-sm font-semibold text-text-muted hover:bg-surface-variant transition-colors"
+                    className={secondaryBtn}
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleManualConfirm}
                     disabled={processing}
-                    className="flex-1 py-3 rounded-xl bg-orange-500/80 text-white text-sm font-bold hover:bg-orange-500 disabled:opacity-50 transition-colors"
+                    className={secondaryBtn}
                   >
                     {processing ? 'Processing…' : 'Confirm Manually'}
                   </button>
@@ -636,26 +669,28 @@ export default function CashierApp() {
             {/* ---- step: success ---- */}
             {step === 'success' && (
               <div className="flex flex-col items-center gap-4 py-8 text-center">
-                <div className="w-20 h-20 rounded-full bg-green-500/15 flex items-center justify-center">
-                  <i className="ri-checkbox-circle-fill text-5xl text-green-400" />
+                <div className="w-20 h-20 rounded-full bg-ready/10 border border-ready/40 flex items-center justify-center">
+                  <i className="ri-checkbox-circle-fill text-5xl text-ready" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-text-main">Payment Received</h3>
-                  <p className="text-sm text-text-muted mt-1">
-                    {tableLabel(selected)} • {formatIDR(total)}
+                  <h3 className="text-2xl font-semibold text-ink">Payment Received</h3>
+                  <p className="text-base text-ink-2 mt-1">
+                    {tableLabel(selected)} • <span className="num font-semibold text-ink">{formatIDR(total)}</span>
                   </p>
                 </div>
                 {method === 'cash' && cashNum > 0 && change >= 0 && (
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-6 py-4 w-full">
-                    <p className="text-sm text-green-400 font-semibold">Change for customer</p>
-                    <p className="text-3xl font-bold text-green-400 tabular-nums mt-1">
+                  <div className="bg-ready/10 border border-ready/40 rounded-xl px-6 py-4 w-full">
+                    <p className="flex items-center justify-center gap-1.5 text-sm text-ready font-semibold">
+                      <i className="ri-hand-coin-line" /> Change for customer
+                    </p>
+                    <p className="num text-4xl font-semibold text-ready mt-1">
                       {formatIDR(change)}
                     </p>
                   </div>
                 )}
                 <button
                   onClick={handleDone}
-                  className="w-full py-4 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary/90 transition-colors mt-2"
+                  className={`${primaryBtn} mt-2`}
                 >
                   Next Order
                 </button>
