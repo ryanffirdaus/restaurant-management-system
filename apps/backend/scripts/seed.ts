@@ -152,10 +152,16 @@ const additionalEmployees = [
   { name: 'Michael Brown', role: 'cashier' as const, salary: 2000, hire_date: '2024-01-05' },
 ]
 
+// Sample photos live in apps/frontend/public/menu/<slug>.jpg (credits in CREDITS.md)
+function menuImageUrl(name: string): string {
+  return `/menu/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.jpg`
+}
+
 async function seedMenuItems(adminUserId: string) {
   console.log('\n📋 Seeding menu items...')
 
   for (const item of menuItems) {
+    const image_url = menuImageUrl(item.name)
     const { data: existing } = await supabase
       .from('menu_items')
       .select('id')
@@ -165,6 +171,7 @@ async function seedMenuItems(adminUserId: string) {
     if (!existing) {
       const { error } = await supabase.from('menu_items').insert({
         ...item,
+        image_url,
         created_by: adminUserId,
         updated_by: adminUserId,
       })
