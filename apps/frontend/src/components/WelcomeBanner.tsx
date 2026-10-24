@@ -11,27 +11,30 @@ export default function WelcomeBanner({
   newOrders = 12,
   revenue = "$4.2K",
 }: WelcomeBannerProps) {
+  const today = new Date().toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
   return (
-    <div className="relative overflow-hidden bg-gradient-to-r from-[#064e3b] to-[#065f46] p-8 rounded-2xl border border-primary/20">
-      <div className="relative z-10 flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-white mb-1">
-            Welcome back, {name}
-          </h2>
-          <p className="text-emerald-100/80 text-sm">
-            You have{" "}
-            <span className="font-bold text-white">{newOrders} new orders</span>{" "}
-            and <span className="font-bold text-white">{revenue} revenue</span>{" "}
-            today
-          </p>
-        </div>
-        <button
-          className="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-xl text-sm font-semibold flex items-center gap-2 transition-all backdrop-blur-md shrink-0"
-          onClick={() => (window.location.href = "/analytics")}
-        >
-          View Analytics <Icon name="ri-arrow-right-line" className="text-sm" />
-        </button>
+    <div className="bg-gradient-to-br from-sidebar-raised to-sidebar text-sidebar-ink rounded-xl p-card-padding flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+      <div className="space-y-2">
+        <p className="text-sm text-sidebar-ink-2 capitalize">{today}</p>
+        <h2 className="text-2xl font-semibold text-sidebar-ink">Welcome back, {name}</h2>
+        <p className="text-sm text-sidebar-ink-2">
+          <span className="inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-white/15 text-sidebar-ink font-medium">
+            <span className="status-pulse is-live" /> {newOrders} active orders
+          </span>
+          <span className="text-sidebar-ink-2"> · </span>
+          <span className="text-sidebar-ink font-medium num">{revenue}</span> revenue today
+        </p>
       </div>
+      <button
+        className="h-11 px-4 rounded bg-sidebar-accent text-sidebar-accent-fg text-sm font-semibold flex items-center gap-2 transition-opacity hover:opacity-90 shrink-0 self-start md:self-auto"
+        onClick={() => (window.location.href = "/analytics")}
+      >
+        View Analytics <Icon name="ri-arrow-right-line" className="text-sm" />
+      </button>
     </div>
   );
 }

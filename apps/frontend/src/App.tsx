@@ -60,15 +60,15 @@ function DashboardLayout() {
 
   return (
     <>
-      <Sidebar
-        open={sidebarOpen}
-        onClose={closeSidebar}
-        isMobile={isMobile}
+      <Sidebar open={sidebarOpen} onClose={closeSidebar} isMobile={isMobile} />
+      <TopAppBar
+        onToggleSidebar={toggleSidebar}
+        sidebarOpen={sidebarOpen}
         userName={displayName}
         userRole={role}
         userInitial={initial}
+        userEmail={user?.email ?? ""}
       />
-      <TopAppBar onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
       <main
         className={`h-screen overflow-y-auto transition-all duration-200 ${
           sidebarOpen ? "ml-sidebar max-md:ml-0" : "ml-0"

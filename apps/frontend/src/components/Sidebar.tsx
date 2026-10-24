@@ -1,46 +1,76 @@
-import { NavLink } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { useTheme } from '../context/ThemeContext'
+import { useEffect, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import { apiGet } from '../lib/api'
 import Icon from './Icon'
 
-const navGroups = [
-  {
-    label: 'Main',
-    items: [
-      { label: 'Overview', icon: 'ri-dashboard-line', to: '/' },
-      { label: 'Menu', icon: 'ri-restaurant-2-line', to: '/menu' },
-      { label: 'Orders', icon: 'ri-bill-line', to: '/orders' },
-      { label: 'Tables', icon: 'ri-layout-grid-line', to: '/tables' },
-    ],
-  },
+interface NavItem {
+  label: string
+  icon: string
+  to: string
+  badge?: 'activeOrders'
+}
+
+interface NavGroup {
+  label: string
+  icon: string
+  children: { label: string; to: string }[]
+}
+
+type NavEntry = NavItem | NavGroup
+
+const isGroup = (entry: NavEntry): entry is NavGroup => 'children' in entry
+
+const navEntries: NavEntry[] = [
+  { label: 'Overview', icon: 'ri-dashboard-line', to: '/' },
+  { label: 'Orders', icon: 'ri-bill-line', to: '/orders', badge: 'activeOrders' },
+  { label: 'Tables', icon: 'ri-layout-grid-line', to: '/tables' },
+  { label: 'Menu', icon: 'ri-restaurant-2-line', to: '/menu' },
   {
     label: 'Management',
-    items: [
-      { label: 'Employees', icon: 'ri-group-line', to: '/employees' },
-      { label: 'Payments', icon: 'ri-money-dollar-circle-line', to: '/payments' },
-      { label: 'Analytics', icon: 'ri-bar-chart-box-line', to: '/analytics' },
+    icon: 'ri-briefcase-4-line',
+    children: [
+      { label: 'Employees', to: '/employees' },
+      { label: 'Payments', to: '/payments' },
+      { label: 'Analytics', to: '/analytics' },
     ],
   },
-  {
-    label: 'System',
-    items: [
-      { label: 'UI Components', icon: 'ri-apps-2-line', to: '/ui-components' },
-    ],
-  },
+  { label: 'UI Components', icon: 'ri-apps-2-line', to: '/ui-components' },
 ]
 
 interface SidebarProps {
   open: boolean
   onClose: () => void
   isMobile: boolean
-  userName: string
-  userRole: string
-  userInitial: string
 }
 
-function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: SidebarProps) {
-  const { logout } = useAuth()
-  const { isDark, toggleTheme } = useTheme()
+function Sidebar({ open, onClose, isMobile }: SidebarProps) {
+  const location = useLocation()
+  const [query, setQuery] = useState('')
+  const [activeOrders, setActiveOrders] = useState<number | null>(null)
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      navEntries.filter(isGroup).map((g) => [g.label, g.children.some((c) => c.to === location.pathname)]),
+    ),
+  )
+
+  // Refresh the live order count whenever the admin navigates
+  useEffect(() => {
+    apiGet<{ status: string }[]>('/orders')
+      .then((orders) => setActiveOrders(orders.filter((o) => o.status === 'pending' || o.status === 'preparing').length))
+      .catch(() => setActiveOrders(null))
+  }, [location.pathname])
+
+  const q = query.trim().toLowerCase()
+  const matches = (label: string) => !q || label.toLowerCase().includes(q)
+  const visibleEntries = navEntries.filter((e) =>
+    isGroup(e) ? matches(e.label) || e.children.some((c) => matches(c.label)) : matches(e.label),
+  )
+
+  const linkBase = 'relative flex items-center gap-4 px-6 py-3 text-sm transition-colors'
+  const linkState = (isActive: boolean) =>
+    isActive
+      ? 'bg-sidebar-raised text-sidebar-ink font-medium before:absolute before:left-0 before:inset-y-1 before:w-[3px] before:rounded-r before:bg-sidebar-accent [&>i:first-child]:text-sidebar-accent'
+      : 'text-sidebar-ink-2 hover:bg-sidebar-raised hover:text-sidebar-ink'
 
   return (
     <>
@@ -49,83 +79,109 @@ function Sidebar({ open, onClose, isMobile, userName, userRole, userInitial }: S
       )}
       <nav
         className={`
-          fixed h-full w-sidebar left-0 top-0 border-r border-outline
-          bg-background flex flex-col z-50
-          transition-transform duration-200 ease-in-out
+          fixed h-full w-sidebar left-0 top-0 border-r border-sidebar-line
+          bg-sidebar flex flex-col z-[200]
+          transition-transform duration-200
           ${open ? 'translate-x-0' : '-translate-x-full'}
         `}
       >
-        {/* Brand */}
-        <div className="h-16 px-5 flex items-center gap-3 border-b border-outline shrink-0">
-          <img src="/logo.svg" alt="Servio" className="w-8 h-8 rounded-lg shrink-0" />
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-text-main leading-tight">Servio</h1>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-none">
-              Admin Terminal
-            </p>
-          </div>
+        {/* Brand — aligned with the 64px top bar */}
+        <div className="h-16 px-6 flex items-center gap-3 border-b border-sidebar-line shrink-0">
+          <img src="/logo-wordmark-dark.svg" alt="Servio" className="h-7 w-auto" />
         </div>
+
+        {/* Search */}
+        <div className="px-6 pt-5 pb-4 shrink-0">
+          <label className="flex items-center border border-sidebar-line bg-sidebar-raised rounded focus-within:border-sidebar-accent transition-colors">
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Type to search..."
+              className="flex-1 min-w-0 bg-transparent px-3 h-10 text-sm text-sidebar-ink placeholder:text-sidebar-ink-2 outline-none"
+            />
+            <Icon name="ri-search-line" className="text-sm text-sidebar-ink-2 px-3" />
+          </label>
+        </div>
+
+        <p className="px-6 pt-2 pb-2 text-xs font-medium text-sidebar-ink-2 shrink-0">Dash menu</p>
 
         {/* Nav */}
-        <div className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto custom-scrollbar">
-          {navGroups.map((group) => (
-            <div key={group.label} className="mb-1">
-              <p className="px-3 text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1 mt-5 first:mt-1">
-                {group.label}
-              </p>
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.label}
-                  to={item.to}
-                  end={item.to === '/'}
-                  onClick={isMobile ? onClose : undefined}
-                  className={({ isActive }) =>
-                    `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                      isActive
-                        ? 'bg-primary/10 text-primary font-semibold'
-                        : 'text-text-muted hover:text-text-main hover:bg-surface-variant'
-                    }`
-                  }
+        <ul className="flex-1 overflow-y-auto custom-scrollbar pb-4">
+          {visibleEntries.map((entry) => {
+            if (!isGroup(entry)) {
+              const count = entry.badge === 'activeOrders' ? activeOrders : null
+              return (
+                <li key={entry.to} className="mt-0.5">
+                  <NavLink
+                    to={entry.to}
+                    end={entry.to === '/'}
+                    onClick={isMobile ? onClose : undefined}
+                    className={({ isActive }) => `${linkBase} ${linkState(isActive)}`}
+                  >
+                    <Icon name={entry.icon} className="text-lg shrink-0" />
+                    <span>{entry.label}</span>
+                    {count != null && count > 0 && (
+                      <span className="ml-auto flex items-center gap-1.5 h-6 px-2 rounded-full bg-sidebar-accent text-sidebar-accent-fg text-xs font-semibold num">
+                        <span className="status-pulse is-live" />
+                        {count}
+                      </span>
+                    )}
+                  </NavLink>
+                </li>
+              )
+            }
+
+            const childActive = entry.children.some((c) => c.to === location.pathname)
+            const isOpen = expanded[entry.label] || !!q
+            const children = entry.children.filter((c) => matches(entry.label) || matches(c.label))
+            return (
+              <li key={entry.label} className="mt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setExpanded((s) => ({ ...s, [entry.label]: !s[entry.label] }))}
+                  aria-expanded={isOpen}
+                  className={`${linkBase} w-full ${childActive ? 'text-sidebar-ink font-medium hover:bg-sidebar-raised' : linkState(false)}`}
                 >
-                  <Icon name={item.icon} className="text-xl shrink-0" />
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-            </div>
-          ))}
-        </div>
+                  <Icon name={entry.icon} className="text-lg shrink-0" />
+                  <span>{entry.label}</span>
+                  <Icon
+                    name="ri-arrow-right-s-line"
+                    className={`ml-auto text-base text-sidebar-ink-2 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}`}
+                  />
+                </button>
+                {isOpen && (
+                  <ul className="pl-[58px] pt-1 pb-2">
+                    {children.map((c) => (
+                      <li key={c.to}>
+                        <NavLink
+                          to={c.to}
+                          onClick={isMobile ? onClose : undefined}
+                          className={({ isActive }) =>
+                            `flex items-center gap-3 py-2 text-[13px] transition-colors ${
+                              isActive ? 'text-sidebar-accent font-medium' : 'text-sidebar-ink-2 hover:text-sidebar-ink'
+                            }`
+                          }
+                        >
+                          {({ isActive }) => (
+                            <>
+                              <span className={`w-[2px] h-3 ${isActive ? 'bg-sidebar-accent' : 'bg-sidebar-line'}`} />
+                              {c.label}
+                            </>
+                          )}
+                        </NavLink>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            )
+          })}
+          {visibleEntries.length === 0 && (
+            <li className="px-6 py-3 text-xs text-sidebar-ink-2">No menu matches "{query}"</li>
+          )}
+        </ul>
 
-        {/* Bottom */}
-        <div className="border-t border-outline px-3 py-3 shrink-0 space-y-0.5">
-          {/* User info */}
-          <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-surface-variant/50">
-            <div className="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center text-sm font-bold shrink-0">
-              {userInitial}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-text-main truncate leading-tight">{userName}</p>
-              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest leading-tight">
-                {userRole}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={toggleTheme}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors"
-          >
-            <Icon name={isDark ? 'ri-sun-line' : 'ri-moon-line'} className="text-xl shrink-0" />
-            <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
-
-          <button
-            onClick={logout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
-          >
-            <Icon name="ri-logout-box-r-line" className="text-xl shrink-0" />
-            <span>Logout</span>
-          </button>
-        </div>
       </nav>
     </>
   )

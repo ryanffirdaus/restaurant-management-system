@@ -106,13 +106,13 @@ export default function Dashboard() {
       title: "Today's Revenue",
       value: loading ? "..." : formatIDR(todayRevenue),
       icon: "ri-money-dollar-circle-line",
-      iconClass: "text-primary bg-primary/10",
+      tone: "ready" as const,
     },
     {
       title: "Total Orders",
       value: loading ? "..." : String(orders.length),
       icon: "ri-bill-line",
-      iconClass: "text-blue-400 bg-blue-500/10",
+      tone: "pending" as const,
     },
     {
       title: "Active Tables",
@@ -122,13 +122,13 @@ export default function Dashboard() {
           ? `${Math.round((occupied / totalTables) * 100)}% Cap.`
           : undefined,
       icon: "ri-layout-grid-line",
-      iconClass: "text-orange-400 bg-orange-500/10",
+      tone: "neutral" as const,
     },
     {
       title: "Active Orders",
       value: loading ? "..." : String(activeOrders),
       icon: "ri-timer-line",
-      iconClass: "text-yellow-400 bg-yellow-500/10",
+      tone: "progress" as const,
     },
   ];
 
@@ -149,40 +149,40 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
         <TableStatusGrid tables={tableData} />
         {/* Stats sidebar */}
-        <div className="card-bg rounded-2xl border border-outline shadow-sm p-6 flex flex-col gap-5">
-          <h3 className="font-bold text-text-main">Quick Stats</h3>
+        <div className="bg-surface rounded-xl border border-line p-6 flex flex-col gap-5">
+          <h3 className="font-semibold text-text-main">Quick Stats</h3>
           <div className="space-y-3">
             {[
               {
                 label: "Pending",
                 count: orders.filter((o) => o.status === "pending").length,
-                color: "text-text-muted",
+                color: "text-pending",
               },
               {
                 label: "Preparing",
                 count: orders.filter((o) => o.status === "preparing").length,
-                color: "text-orange-400",
+                color: "text-progress",
               },
               {
                 label: "Ready",
                 count: orders.filter((o) => o.status === "ready").length,
-                color: "text-green-400",
+                color: "text-ready",
               },
               {
                 label: "Completed today",
                 count: todayOrders.filter((o) => o.status === "completed")
                   .length,
-                color: "text-blue-400",
+                color: "text-ink-2",
               },
               {
                 label: "Available tables",
                 count: available,
-                color: "text-primary",
+                color: "text-ready",
               },
               {
                 label: "Occupied tables",
                 count: occupied,
-                color: "text-orange-400",
+                color: "text-progress",
               },
             ].map((s) => (
               <div
@@ -190,7 +190,7 @@ export default function Dashboard() {
                 className="flex justify-between items-center py-1.5 border-b border-outline/50 last:border-0"
               >
                 <span className="text-sm text-text-muted">{s.label}</span>
-                <span className={`text-sm font-bold ${s.color}`}>
+                <span className={`text-base font-semibold num ${s.color}`}>
                   {loading ? "…" : s.count}
                 </span>
               </div>

@@ -21,14 +21,19 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-sm card-bg rounded-2xl border border-outline shadow-sm p-6">
-        <div className="text-center mb-6">
-          <img src="/logo.svg" alt="Servio" className="w-12 h-12 rounded-xl mx-auto mb-3" />
-          <h1 className="text-xl font-bold text-text-main tracking-tight">Servio</h1>
-          <p className="text-xs font-bold text-text-muted uppercase tracking-widest mt-1">
-            Admin Terminal
-          </p>
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 gap-8">
+      <div className="w-full max-w-sm rounded-3xl bg-surface border border-line p-6">
+        <div className="mb-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <img src="/logo-wordmark.svg" alt="Servio" className="h-8 w-auto" />
+            <span className="text-xs text-ink-3 flex items-center gap-2">
+              <span className="status-pulse text-ready" /> Restaurant management
+            </span>
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl font-semibold text-text-main">Sign in</h1>
+            <p className="text-sm text-text-muted">Masuk untuk mulai shift kamu.</p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -52,11 +57,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
 
           {error && <ValidationMessage state="error" message={error} />}
 
-          <Button type="submit" variant="primary" disabled={submitting} className="w-full justify-center">
+          <Button type="submit" variant="primary" disabled={submitting} size="lg" className="w-full justify-center">
             {submitting ? "Signing in..." : "Sign In"}
           </Button>
         </form>
       </div>
+      <p className="text-xs text-ink-3">Servio · RMS</p>
     </div>
   )
 }
