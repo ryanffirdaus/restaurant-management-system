@@ -3,7 +3,9 @@ import { useAuth } from '../../context/AuthContext'
 import { apiGet, apiPatch, apiPost, apiDelete } from '../../lib/api'
 import { loadPositions, savePositions, autoLayoutTables, GRID_ROWS, GRID_COLS, type TablePosition } from '../../lib/floorPlan'
 import Icon from '../../components/Icon'
-import Badge from '../../components/Badge'
+import MetricCard from '../../components/MetricCard'
+import StatusPill from '../../components/StatusPill'
+import { tones, tableStatus, statusMeta } from '../../lib/status'
 import Modal from '../../components/Modal'
 import { Button, TextInput, Select } from '../../components/ui'
 
@@ -22,24 +24,8 @@ const STATUS_OPTIONS = [
   { value: 'cleaning', label: 'Cleaning' },
 ]
 
-function statusColor(status: string) {
-  switch (status) {
-    case 'available': return { border: 'border-primary/40', bg: 'bg-primary/10', text: 'text-primary', dot: 'bg-primary' }
-    case 'occupied': return { border: 'border-orange-400/40', bg: 'bg-orange-500/10', text: 'text-orange-400', dot: 'bg-orange-400' }
-    case 'reserved': return { border: 'border-blue-400/40', bg: 'bg-blue-500/10', text: 'text-blue-400', dot: 'bg-blue-400' }
-    case 'cleaning': return { border: 'border-danger/40', bg: 'bg-danger/10', text: 'text-danger', dot: 'bg-danger' }
-    default: return { border: 'border-outline', bg: 'bg-surface-variant', text: 'text-text-muted', dot: 'bg-text-muted' }
-  }
-}
-
-function statusVariant(status: string) {
-  switch (status) {
-    case 'available': return 'primary' as const
-    case 'occupied': return 'warning' as const
-    case 'reserved': return 'neutral' as const
-    case 'cleaning': return 'danger' as const
-    default: return 'neutral' as const
-  }
+function statusTone(status: string) {
+  return tones[statusMeta(tableStatus, status).tone]
 }
 
 // ─── Floor Plan Component ────────────────────────────────────────────────────
@@ -132,17 +118,18 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
   })
 
   return (
-    <div className="card-bg rounded-2xl border border-outline shadow-sm overflow-hidden">
-      <div className="p-5 border-b border-outline flex items-center justify-between bg-surface/50">
+    <div className="bg-surface rounded-xl border border-line overflow-hidden">
+      <div className="p-5 border-b border-line flex flex-wrap gap-3 items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="font-bold text-text-main">Floor Plan</h3>
-          <div className="flex gap-3">
+          <h3 className="font-semibold text-ink">Floor Plan</h3>
+          <div className="flex flex-wrap gap-3">
             {(['available', 'occupied', 'reserved', 'cleaning'] as const).map(s => {
-              const c = statusColor(s)
+              const meta = tableStatus[s]
+              const t = tones[meta.tone]
               return (
-                <span key={s} className="flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-widest">
-                  <span className={`w-2 h-2 rounded-full ${c.dot}`} />
-                  {s}
+                <span key={s} className="flex items-center gap-1.5 text-xs text-ink-2">
+                  <Icon name={meta.icon} className={`text-sm ${t.text}`} />
+                  {meta.label}
                 </span>
               )
             })}
@@ -154,7 +141,7 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
               <Icon name="ri-magic-line" className="text-base" />
               Auto Layout
             </Button>
-            <Button variant={editMode ? 'primary' : 'outline'} onClick={() => setEditMode(v => !v)}>
+            <Button variant={editMode ? 'secondary' : 'outline'} onClick={() => setEditMode(v => !v)}>
               <Icon name={editMode ? 'ri-check-line' : 'ri-drag-move-2-line'} className="text-base" />
               {editMode ? 'Done' : 'Edit Layout'}
             </Button>
@@ -164,7 +151,7 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
 
       <div className="p-4 overflow-auto">
         {editMode && (
-          <p className="text-xs text-text-muted mb-3 flex items-center gap-1.5">
+          <p className="text-xs text-ink-3 mb-3 flex items-center gap-1.5">
             <Icon name="ri-information-line" className="text-sm" />
             Drag tables to rearrange. Drop onto another table to swap positions.
           </p>
@@ -178,16 +165,17 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
               const key = `${r},${c}`
               const tableId = grid[key]
               const table = tableId ? tableById[tableId] : null
-              const c_style = table ? statusColor(table.status) : null
+              const meta = table ? statusMeta(tableStatus, table.status) : null
+              const t = meta ? tones[meta.tone] : null
 
               return (
                 <div
                   key={key}
-                  className={`rounded-xl border transition-all ${
+                  className={`relative overflow-hidden rounded-lg border transition-colors duration-150 ${
                     table
-                      ? `${c_style!.border} ${c_style!.bg} cursor-pointer hover:opacity-80 ${editMode ? 'cursor-grab active:cursor-grabbing' : ''}`
-                      : `border-dashed border-outline/30 ${editMode ? 'bg-surface-variant/20' : 'bg-transparent'}`
-                  } ${dragging && !table ? 'border-primary/40 bg-primary/5' : ''}`}
+                      ? `bg-raised border-line-strong cursor-pointer hover:border-ink-3 ${selected?.id === table.id ? 'ring-2 ring-brand-ink' : ''} ${editMode ? 'cursor-grab active:cursor-grabbing' : ''}`
+                      : `border-dashed border-line ${editMode ? 'bg-background' : 'bg-transparent'}`
+                  } ${dragging && !table ? 'border-brand-ink/60 bg-brand/5' : ''}`}
                   onDragOver={e => { if (editMode) e.preventDefault() }}
                   onDrop={e => editMode && handleDrop(e, r, c)}
                   onClick={() => {
@@ -199,12 +187,16 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
                       className="w-full h-full flex flex-col items-center justify-center p-1 select-none"
                       draggable={editMode}
                       onDragStart={e => handleDragStart(e, table.id)}
+                      title={`Table ${table.table_number} · ${meta!.label}`}
                     >
-                      <span className={`text-[10px] font-black ${c_style!.text} leading-none`}>
+                      <span className={`absolute inset-x-0 top-0 h-1 ${t!.solid}`} />
+                      <span className="text-sm font-semibold text-ink num leading-none">
                         T-{String(table.table_number).padStart(2, '0')}
                       </span>
-                      <span className="text-[9px] text-text-muted leading-none mt-0.5">{table.capacity}p</span>
-                      <span className={`w-1.5 h-1.5 rounded-full ${c_style!.dot} mt-1`} />
+                      <span className="flex items-center gap-1 text-xs text-ink-3 leading-none mt-1.5">
+                        <Icon name={meta!.icon} className={`text-xs ${t!.text}`} />
+                        <span className="num">{table.capacity}p</span>
+                      </span>
                     </div>
                   )}
                 </div>
@@ -216,13 +208,13 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
 
       {/* Table quick-action popover */}
       {selected && !editMode && (
-        <div className="border-t border-outline p-4 flex items-center justify-between bg-surface/50">
+        <div className="border-t border-line p-4 flex items-center justify-between bg-raised">
           <div className="flex items-center gap-3">
-            <span className={`w-3 h-3 rounded-full ${statusColor(selected.status).dot}`} />
             <div>
-              <p className="text-sm font-bold text-text-main">Table {selected.table_number}</p>
-              <p className="text-xs text-text-muted">{selected.capacity} seats • {selected.status}</p>
+              <p className="text-sm font-semibold text-ink">Table <span className="num">{selected.table_number}</span></p>
+              <p className="text-xs text-ink-3"><span className="num">{selected.capacity}</span> seats</p>
             </div>
+            <StatusPill map={tableStatus} status={selected.status} />
           </div>
           <div className="flex gap-2">
             {isAdmin && (
@@ -235,7 +227,7 @@ function FloorPlan({ tables, isAdmin, onStatusClick, onEditClick }: FloorPlanPro
               <Icon name="ri-arrow-left-right-line" className="text-sm" />
               Status
             </Button>
-            <button onClick={() => setSelected(null)} className="p-2 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors">
+            <button onClick={() => setSelected(null)} className="p-2 rounded text-ink-2 hover:text-ink hover:bg-line transition-colors">
               <Icon name="ri-close-line" className="text-sm" />
             </button>
           </div>
@@ -348,22 +340,22 @@ export default function TablesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-main">Tables</h1>
-          <p className="text-sm text-text-muted mt-0.5">{tables.length} tables total</p>
+          <h1 className="text-2xl font-semibold text-ink">Tables</h1>
+          <p className="text-sm text-ink-2 mt-0.5"><span className="num">{tables.length}</span> tables total</p>
         </div>
         <div className="flex gap-2">
           {/* View toggle */}
-          <div className="flex rounded-xl border border-outline overflow-hidden">
+          <div className="flex rounded border border-line-strong overflow-hidden">
             <button
               onClick={() => setView('floorplan')}
-              className={`px-4 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors ${view === 'floorplan' ? 'bg-primary/10 text-primary' : 'text-text-muted hover:text-text-main hover:bg-surface-variant'}`}
+              className={`px-4 py-2 text-xs font-medium flex items-center gap-1.5 transition-colors ${view === 'floorplan' ? 'bg-brand text-brand-foreground' : 'text-ink-2 hover:text-ink hover:bg-raised'}`}
             >
               <Icon name="ri-dashboard-line" className="text-sm" />
               Floor Plan
             </button>
             <button
               onClick={() => setView('list')}
-              className={`px-4 py-2 text-xs font-bold flex items-center gap-1.5 transition-colors border-l border-outline ${view === 'list' ? 'bg-primary/10 text-primary' : 'text-text-muted hover:text-text-main hover:bg-surface-variant'}`}
+              className={`px-4 py-2 text-xs font-medium flex items-center gap-1.5 transition-colors border-l border-line-strong ${view === 'list' ? 'bg-brand text-brand-foreground' : 'text-ink-2 hover:text-ink hover:bg-raised'}`}
             >
               <Icon name="ri-table-2" className="text-sm" />
               List
@@ -380,23 +372,18 @@ export default function TablesPage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
-        {[
-          { label: 'Available', count: counts.available, cls: 'text-primary' },
-          { label: 'Occupied', count: counts.occupied, cls: 'text-orange-400' },
-          { label: 'Reserved', count: counts.reserved, cls: 'text-blue-400' },
-          { label: 'Cleaning', count: counts.cleaning, cls: 'text-danger' },
-        ].map(s => (
-          <div key={s.label} className="card-bg rounded-2xl border border-outline p-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">{s.label}</p>
-            <p className={`text-3xl font-bold ${s.cls}`}>{s.count}</p>
-          </div>
-        ))}
+        {(['available', 'occupied', 'reserved', 'cleaning'] as const).map(s => {
+          const meta = tableStatus[s]
+          return (
+            <MetricCard key={s} title={meta.label} value={String(counts[s])} icon={meta.icon} tone={meta.tone} />
+          )
+        })}
       </div>
 
       {loading ? (
-        <div className="card-bg rounded-2xl border border-outline p-12 text-center text-text-muted">Loading...</div>
+        <div className="bg-surface rounded-xl border border-line p-12 text-center text-ink-3">Loading...</div>
       ) : error ? (
-        <div className="card-bg rounded-2xl border border-outline p-12 text-center text-danger">{error}</div>
+        <div className="bg-surface rounded-xl border border-line p-12 text-center text-danger">{error}</div>
       ) : view === 'floorplan' ? (
         <FloorPlan
           tables={tables}
@@ -407,36 +394,32 @@ export default function TablesPage() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-gutter">
           {tables.map(t => {
-            const c = statusColor(t.status)
+            const tone = statusTone(t.status)
             return (
               <div
                 key={t.id}
-                className={`card-bg rounded-2xl border ${c.border} p-5 flex flex-col gap-3 hover:opacity-90 transition-all group`}
+                className="relative overflow-hidden bg-surface rounded-xl border border-line p-5 pt-6 flex flex-col gap-3 hover:border-line-strong transition-colors duration-150 group"
               >
+                <span className={`absolute inset-x-0 top-0 h-1 ${tone.solid}`} />
                 <div className="flex items-start justify-between">
-                  <div className={`w-8 h-8 rounded-xl ${c.bg} flex items-center justify-center`}>
-                    <span className={`text-[10px] font-black ${c.text}`}>{t.table_number}</span>
-                  </div>
+                  <p className="text-xl font-semibold text-ink num">T-{String(t.table_number).padStart(2, '0')}</p>
                   {isAdmin && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={() => openEdit(t)} className="p-1.5 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors">
+                      <button onClick={() => openEdit(t)} className="p-1.5 rounded text-ink-2 hover:text-ink hover:bg-raised transition-colors">
                         <Icon name="ri-pencil-line" className="text-sm" />
                       </button>
-                      <button onClick={() => handleDelete(t)} className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors">
+                      <button onClick={() => handleDelete(t)} className="p-1.5 rounded text-ink-2 hover:text-danger hover:bg-danger/10 transition-colors">
                         <Icon name="ri-delete-bin-6-line" className="text-sm" />
                       </button>
                     </div>
                   )}
                 </div>
-                <div>
-                  <p className="text-lg font-bold text-text-main">T-{String(t.table_number).padStart(2, '0')}</p>
-                  <p className="text-xs text-text-muted">{t.capacity} seats</p>
-                </div>
-                <Badge variant={statusVariant(t.status)}>{t.status.charAt(0).toUpperCase() + t.status.slice(1)}</Badge>
-                {t.notes && <p className="text-xs text-text-muted truncate">{t.notes}</p>}
+                <p className="text-xs text-ink-3 -mt-2"><span className="num">{t.capacity}</span> seats</p>
+                <StatusPill map={tableStatus} status={t.status} className="self-start" />
+                {t.notes && <p className="text-xs text-ink-3 truncate">{t.notes}</p>}
                 <button
                   onClick={() => setStatusModal({ table: t, status: t.status })}
-                  className="mt-auto text-xs font-medium text-text-muted hover:text-primary transition-colors flex items-center gap-1"
+                  className="mt-auto text-xs font-medium text-ink-2 hover:text-ink transition-colors flex items-center gap-1"
                 >
                   <Icon name="ri-arrow-left-right-line" className="text-sm" />
                   Change status

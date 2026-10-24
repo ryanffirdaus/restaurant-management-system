@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { apiGet, formatIDR } from '../../lib/api'
-import Icon from '../../components/Icon'
+import MetricCard from '../../components/MetricCard'
 
 interface Order {
   id: string
@@ -26,16 +26,16 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
         const pct = (d.value / max) * 100
         return (
           <div key={d.label} className="flex-1 flex flex-col items-center gap-1 group">
-            <span className="text-[9px] text-text-muted opacity-0 group-hover:opacity-100 transition-opacity font-bold">
+            <span className="text-xs text-ink-2 opacity-0 group-hover:opacity-100 transition-opacity font-medium num whitespace-nowrap">
               {formatIDR(d.value)}
             </span>
-            <div className="w-full rounded-t-md bg-primary/20 relative overflow-hidden" style={{ height: '80px' }}>
+            <div className="w-full rounded-t-md bg-raised relative overflow-hidden" style={{ height: '80px' }}>
               <div
-                className="absolute bottom-0 left-0 right-0 bg-primary rounded-t-md transition-all duration-500"
+                className="absolute bottom-0 left-0 right-0 bg-brand rounded-t-md transition-all duration-500"
                 style={{ height: `${pct}%` }}
               />
             </div>
-            <span className="text-[9px] text-text-muted font-medium whitespace-nowrap">{d.label}</span>
+            <span className="text-xs text-ink-3 font-normal whitespace-nowrap">{d.label}</span>
           </div>
         )
       })}
@@ -46,16 +46,16 @@ function BarChart({ data }: { data: { label: string; value: number }[] }) {
 // ─── Donut chart (CSS) ───────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, string> = {
-  completed:  '#10b981',
-  preparing:  '#f97316',
-  pending:    '#6b7280',
-  ready:      '#3b82f6',
-  cancelled:  '#ef4444',
+  completed:  'rgb(var(--c-ink-3))',
+  preparing:  'rgb(var(--c-progress))',
+  pending:    'rgb(var(--c-pending))',
+  ready:      'rgb(var(--c-ready))',
+  cancelled:  'rgb(var(--c-danger))',
 }
 
 function DonutChart({ segments }: { segments: { label: string; count: number; color: string }[] }) {
   const total = segments.reduce((s, x) => s + x.count, 0)
-  if (total === 0) return <div className="w-28 h-28 rounded-full bg-surface-variant" />
+  if (total === 0) return <div className="w-28 h-28 rounded-full bg-raised" />
 
   let cumulative = 0
   const parts = segments.filter(s => s.count > 0).map(s => {
@@ -167,63 +167,57 @@ export default function AnalyticsPage() {
   return (
     <div className="mt-16 p-container-margin space-y-gutter">
       <div>
-        <h1 className="text-2xl font-bold text-text-main">Analytics</h1>
-        <p className="text-sm text-text-muted mt-0.5">Performance overview based on all recorded orders</p>
+        <h1 className="text-2xl font-semibold text-ink">Analytics</h1>
+        <p className="text-sm text-ink-2 mt-0.5">Performance overview based on all recorded orders</p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
         {[
-          { label: 'Total Revenue', value: formatIDR(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-primary bg-primary/10' },
-          { label: 'Avg Order Value', value: formatIDR(avgOrderValue), icon: 'ri-line-chart-line', cls: 'text-blue-400 bg-blue-500/10' },
-          { label: 'Total Orders', value: String(orders.length), icon: 'ri-bill-line', cls: 'text-orange-400 bg-orange-500/10' },
-          { label: 'Cancellation Rate', value: `${cancelRate}%`, icon: 'ri-close-circle-line', cls: 'text-danger bg-danger/10' },
+          { label: 'Total Revenue', value: formatIDR(totalRevenue), icon: 'ri-money-dollar-circle-line', tone: 'neutral' as const },
+          { label: 'Avg Order Value', value: formatIDR(avgOrderValue), icon: 'ri-line-chart-line', tone: 'neutral' as const },
+          { label: 'Total Orders', value: String(orders.length), icon: 'ri-bill-line', tone: 'pending' as const },
+          { label: 'Cancellation Rate', value: `${cancelRate}%`, icon: 'ri-close-circle-line', tone: 'danger' as const },
         ].map(k => (
-          <div key={k.label} className="card-bg rounded-2xl border border-outline p-5">
-            <div className={`w-9 h-9 rounded-xl ${k.cls} flex items-center justify-center mb-3`}>
-              <Icon name={k.icon} />
-            </div>
-            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">{k.label}</p>
-            <p className="text-2xl font-bold text-text-main tabular-nums">{loading ? '...' : k.value}</p>
-          </div>
+          <MetricCard key={k.label} title={k.label} value={loading ? '...' : k.value} icon={k.icon} tone={k.tone} />
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
         {/* Revenue last 7 days */}
-        <div className="lg:col-span-2 card-bg rounded-2xl border border-outline shadow-sm p-5">
-          <h3 className="font-bold text-text-main mb-4">Revenue — Last 7 Days</h3>
+        <div className="lg:col-span-2 bg-surface rounded-xl border border-line p-5">
+          <h3 className="font-semibold text-ink mb-4">Revenue — Last 7 Days</h3>
           {loading ? (
-            <div className="h-28 flex items-center justify-center text-text-muted text-sm">Loading...</div>
+            <div className="h-28 flex items-center justify-center text-ink-2 text-sm">Loading...</div>
           ) : (
             <BarChart data={last7} />
           )}
         </div>
 
         {/* Orders by status donut */}
-        <div className="card-bg rounded-2xl border border-outline shadow-sm p-5 flex flex-col gap-4">
-          <h3 className="font-bold text-text-main">Orders by Status</h3>
+        <div className="bg-surface rounded-xl border border-line p-5 flex flex-col gap-4">
+          <h3 className="font-semibold text-ink">Orders by Status</h3>
           {loading ? (
-            <div className="flex-1 flex items-center justify-center text-text-muted text-sm">Loading...</div>
+            <div className="flex-1 flex items-center justify-center text-ink-2 text-sm">Loading...</div>
           ) : (
             <div className="flex items-center gap-5">
               <div className="relative w-28 h-28 flex-shrink-0">
                 <DonutChart segments={statusCounts} />
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-16 h-16 rounded-full card-bg flex flex-col items-center justify-center">
-                    <span className="text-lg font-bold text-text-main leading-none">{orders.length}</span>
-                    <span className="text-[9px] text-text-muted">total</span>
+                  <div className="w-16 h-16 rounded-full bg-surface flex flex-col items-center justify-center">
+                    <span className="text-lg font-semibold text-ink leading-none num">{orders.length}</span>
+                    <span className="text-xs text-ink-3">total</span>
                   </div>
                 </div>
               </div>
               <div className="space-y-1.5 flex-1 min-w-0">
                 {statusCounts.filter(s => s.count > 0).map(s => (
                   <div key={s.label} className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-xs text-text-muted min-w-0">
+                    <span className="flex items-center gap-1.5 text-xs text-ink-2 min-w-0">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
                       <span className="truncate">{s.label}</span>
                     </span>
-                    <span className="text-xs font-bold text-text-main tabular-nums">{s.count}</span>
+                    <span className="text-xs font-semibold text-ink num">{s.count}</span>
                   </div>
                 ))}
               </div>
@@ -234,12 +228,12 @@ export default function AnalyticsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
         {/* Top selling items */}
-        <div className="card-bg rounded-2xl border border-outline shadow-sm p-5">
-          <h3 className="font-bold text-text-main mb-4">Top Selling Items</h3>
+        <div className="bg-surface rounded-xl border border-line p-5">
+          <h3 className="font-semibold text-ink mb-4">Top Selling Items</h3>
           {loading ? (
-            <div className="text-center text-text-muted text-sm py-6">Loading...</div>
+            <div className="text-center text-ink-2 text-sm py-6">Loading...</div>
           ) : topItems.length === 0 ? (
-            <div className="text-center text-text-muted text-sm py-6">No data</div>
+            <div className="text-center text-ink-2 text-sm py-6">No data</div>
           ) : (
             <div className="space-y-3">
               {topItems.map((item, i) => {
@@ -247,17 +241,17 @@ export default function AnalyticsPage() {
                 return (
                   <div key={item.name}>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="flex items-center gap-2 text-text-main font-medium min-w-0">
-                        <span className="text-[10px] font-black text-text-muted w-4 text-center">{i + 1}</span>
+                      <span className="flex items-center gap-2 text-ink font-normal min-w-0">
+                        <span className="text-xs font-medium text-ink-3 w-4 text-center num">{i + 1}</span>
                         <span className="truncate">{item.name}</span>
                       </span>
                       <span className="flex items-center gap-3 shrink-0 ml-2">
-                        <span className="text-text-muted text-xs">{item.qty} sold</span>
-                        <span className="font-bold text-text-main tabular-nums">{formatIDR(item.revenue)}</span>
+                        <span className="text-ink-3 text-xs num">{item.qty} sold</span>
+                        <span className="font-semibold text-ink num">{formatIDR(item.revenue)}</span>
                       </span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-surface-variant overflow-hidden">
-                      <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-1.5 rounded-full bg-raised overflow-hidden">
+                      <div className="h-full bg-brand rounded-full" style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )
@@ -267,12 +261,12 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Revenue by category */}
-        <div className="card-bg rounded-2xl border border-outline shadow-sm p-5">
-          <h3 className="font-bold text-text-main mb-4">Revenue by Category</h3>
+        <div className="bg-surface rounded-xl border border-line p-5">
+          <h3 className="font-semibold text-ink mb-4">Revenue by Category</h3>
           {loading ? (
-            <div className="text-center text-text-muted text-sm py-6">Loading...</div>
+            <div className="text-center text-ink-2 text-sm py-6">Loading...</div>
           ) : catData.length === 0 ? (
-            <div className="text-center text-text-muted text-sm py-6">No data</div>
+            <div className="text-center text-ink-2 text-sm py-6">No data</div>
           ) : (
             <BarChart data={catData} />
           )}
@@ -280,10 +274,10 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Hourly order distribution */}
-      <div className="card-bg rounded-2xl border border-outline shadow-sm p-5">
-        <h3 className="font-bold text-text-main mb-4">Orders by Hour of Day</h3>
+      <div className="bg-surface rounded-xl border border-line p-5">
+        <h3 className="font-semibold text-ink mb-4">Orders by Hour of Day</h3>
         {loading ? (
-          <div className="text-center text-text-muted text-sm py-6">Loading...</div>
+          <div className="text-center text-ink-2 text-sm py-6">Loading...</div>
         ) : (
           <BarChart data={hourBuckets} />
         )}

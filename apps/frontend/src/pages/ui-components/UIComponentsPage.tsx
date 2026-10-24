@@ -23,7 +23,7 @@ export default function UIComponentsPage() {
       <div className="h-16" />
       <div className="p-container-margin space-y-gutter">
         <div className="mb-4">
-          <h2 className="text-3xl font-bold text-text-main mb-2">
+          <h2 className="text-3xl font-medium text-text-main mb-2">
             Servio UI Component Library
           </h2>
           <p className="text-text-muted max-w-2xl">
@@ -63,12 +63,12 @@ export default function UIComponentsPage() {
 
           <Section title="Select & Combobox">
             <p className="text-xs text-text-muted mb-5 -mt-2">
-              <span className="text-primary font-semibold">Select</span> — single-select with search &nbsp;|&nbsp;
-              <span className="text-primary font-semibold">Combobox</span> — multi-select with search &amp; checkboxes
+              <span className="text-brand-ink font-medium">Select</span> — single-select with search &nbsp;|&nbsp;
+              <span className="text-brand-ink font-medium">Combobox</span> — multi-select with search &amp; checkboxes
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <p className="block text-sm font-medium text-text-muted mb-4">Select (single, searchable)</p>
+                <p className="block text-sm font-normal text-text-muted mb-4">Select (single, searchable)</p>
                 <Select
                   placeholder="Select Option"
                   options={[
@@ -82,7 +82,7 @@ export default function UIComponentsPage() {
                 />
               </div>
               <div>
-                <p className="block text-sm font-medium text-text-muted mb-4">Combobox (multi-select, searchable)</p>
+                <p className="block text-sm font-normal text-text-muted mb-4">Combobox (multi-select, searchable)</p>
                 <Combobox
                   placeholder="Select tables..."
                   options={[
@@ -115,13 +115,13 @@ export default function UIComponentsPage() {
           <Section title="Selection Controls">
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-4">
-                <p className="text-sm font-medium text-text-muted mb-4">Checkboxes</p>
+                <p className="text-sm font-normal text-text-muted mb-4">Checkboxes</p>
                 <Checkbox label="Remember me" defaultChecked />
                 <Checkbox label="Email notifications" />
                 <Checkbox label="Disabled state" disabled defaultChecked />
               </div>
               <div className="space-y-4">
-                <p className="text-sm font-medium text-text-muted mb-4">Radio Buttons</p>
+                <p className="text-sm font-normal text-text-muted mb-4">Radio Buttons</p>
                 <Radio name="options" label="Option A" defaultChecked />
                 <Radio name="options" label="Option B" />
                 <Radio name="options" label="Option C" />

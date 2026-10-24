@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { apiGet, apiPost, apiPatch, apiDelete, formatIDR } from '../../lib/api'
 import Icon from '../../components/Icon'
-import Badge from '../../components/Badge'
+import MetricCard from '../../components/MetricCard'
+import StatusPill from '../../components/StatusPill'
+import { orderStatus } from '../../lib/status'
 import Table from '../../components/Table'
 import Modal from '../../components/Modal'
 import { Button, Select, Textarea } from '../../components/ui'
@@ -48,17 +50,6 @@ const STATUS_OPTIONS = [
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ]
-
-function statusVariant(status: string) {
-  switch (status) {
-    case 'pending': return 'neutral' as const
-    case 'preparing': return 'warning' as const
-    case 'ready': return 'primary' as const
-    case 'completed': return 'primary' as const
-    case 'cancelled': return 'danger' as const
-    default: return 'neutral' as const
-  }
-}
 
 interface CartItem {
   menuItem: MenuItem
@@ -180,20 +171,20 @@ export default function OrdersPage() {
   const columns: Column<Order>[] = [
     {
       key: 'id', label: 'Order ID',
-      className: 'font-mono text-xs text-text-main whitespace-nowrap',
+      className: 'font-mono text-xs text-ink-2 whitespace-nowrap',
       render: o => <span className="font-mono text-xs">{o.id.slice(0, 8).toUpperCase()}</span>,
     },
     {
       key: 'table_id', label: 'Table',
-      className: 'text-sm text-text-main whitespace-nowrap',
+      className: 'text-sm text-ink whitespace-nowrap',
       render: o => <span>{getTableLabel(o.table_id)}</span>,
     },
     {
       key: 'order_items', label: 'Items',
-      className: 'text-sm text-text-muted whitespace-nowrap',
+      className: 'text-sm text-ink-2 whitespace-nowrap',
       render: o => {
         const items = o.order_items ?? []
-        if (items.length === 0) return <span className="text-text-muted">—</span>
+        if (items.length === 0) return <span className="text-ink-2">—</span>
         const preview = items.slice(0, 2).map(i => `${i.quantity}x ${i.menu_item?.name ?? '?'}`).join(', ')
         return <span>{preview}{items.length > 2 ? ` +${items.length - 2}` : ''}</span>
       },
@@ -201,17 +192,17 @@ export default function OrdersPage() {
     {
       key: 'total_price', label: 'Total',
       headerClassName: 'text-right',
-      className: 'text-sm font-bold text-right text-text-main whitespace-nowrap tabular-nums',
+      className: 'text-sm font-semibold text-right text-ink whitespace-nowrap num',
       render: o => <span>{o.total_price != null ? formatIDR(o.total_price) : '—'}</span>,
     },
     {
       key: 'status', label: 'Status',
       className: 'whitespace-nowrap',
-      render: o => <Badge variant={statusVariant(o.status)}>{o.status.charAt(0).toUpperCase() + o.status.slice(1)}</Badge>,
+      render: o => <StatusPill map={orderStatus} status={o.status} />,
     },
     {
       key: 'created_at', label: 'Time',
-      className: 'text-text-muted text-sm whitespace-nowrap',
+      className: 'text-ink-2 text-sm whitespace-nowrap',
       render: o => <span>{new Date(o.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>,
     },
     {
@@ -219,14 +210,14 @@ export default function OrdersPage() {
       className: 'whitespace-nowrap',
       render: o => (
         <div className="flex gap-1 justify-end">
-          <button onClick={() => setDetailOrder(o)} className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors">
+          <button onClick={() => setDetailOrder(o)} className="p-1.5 rounded text-ink-2 hover:text-ink hover:bg-raised transition-colors">
             <Icon name="ri-eye-line" className="text-sm" />
           </button>
-          <button onClick={() => setStatusModal({ order: o, status: o.status })} className="p-1.5 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors">
+          <button onClick={() => setStatusModal({ order: o, status: o.status })} className="p-1.5 rounded text-ink-2 hover:text-ink hover:bg-raised transition-colors">
             <Icon name="ri-arrow-left-right-line" className="text-sm" />
           </button>
           {isAdmin && (
-            <button onClick={() => handleDelete(o)} className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors">
+            <button onClick={() => handleDelete(o)} className="p-1.5 rounded text-ink-2 hover:text-danger hover:bg-danger/10 transition-colors">
               <Icon name="ri-delete-bin-6-line" className="text-sm" />
             </button>
           )}
@@ -250,8 +241,8 @@ export default function OrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-text-main">Orders</h1>
-          <p className="text-sm text-text-muted mt-0.5">{orders.length} orders total</p>
+          <h1 className="text-2xl font-semibold text-ink">Orders</h1>
+          <p className="text-sm text-ink-2 mt-0.5">{orders.length} orders total</p>
         </div>
         <Button variant="primary" onClick={openCreate}>
           <Icon name="ri-add-line" className="text-base" />
@@ -263,19 +254,15 @@ export default function OrdersPage() {
       <div className="grid grid-cols-2 md:grid-cols-5 gap-gutter">
         {['pending', 'preparing', 'ready', 'completed', 'cancelled'].map(s => {
           const count = orders.filter(o => o.status === s).length
-          return (
-            <div key={s} className="card-bg rounded-2xl border border-outline p-4">
-              <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1 capitalize">{s}</p>
-              <p className="text-2xl font-bold text-text-main">{count}</p>
-            </div>
-          )
+          const meta = orderStatus[s]
+          return <MetricCard key={s} title={meta.label} value={String(count)} icon={meta.icon} tone={meta.tone} />
         })}
       </div>
 
       {/* Filters + Table */}
-      <div className="card-bg rounded-2xl border border-outline shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-outline flex items-center justify-between bg-surface/50">
-          <h3 className="font-bold text-text-main">Order List</h3>
+      <div className="bg-surface rounded-xl border border-line overflow-hidden">
+        <div className="p-5 border-b border-line flex items-center justify-between bg-surface/50">
+          <h3 className="font-semibold text-ink">Order List</h3>
           <div className="w-44">
             <Select
               value={filterStatus}
@@ -285,9 +272,9 @@ export default function OrdersPage() {
           </div>
         </div>
         {loading ? (
-          <div className="p-12 text-center text-text-muted">Loading...</div>
+          <div className="p-12 text-center text-ink-2">Loading...</div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-text-muted">No orders found.</div>
+          <div className="p-12 text-center text-ink-2">No orders found.</div>
         ) : (
           <div className="overflow-x-auto">
             <Table columns={columns} data={filtered} />
@@ -330,24 +317,24 @@ export default function OrdersPage() {
           {/* Cart */}
           {cart.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">Cart</p>
+              <p className="text-xs font-medium text-ink-3 mb-2">Cart</p>
               <div className="space-y-1.5">
                 {cart.map(c => (
-                  <div key={c.menuItem.id} className="flex items-center justify-between rounded-xl bg-surface-variant px-3 py-2">
+                  <div key={c.menuItem.id} className="flex items-center justify-between rounded-xl bg-raised px-3 py-2">
                     <div>
-                      <span className="text-sm font-medium text-text-main">{c.menuItem.name}</span>
-                      <span className="text-xs text-text-muted ml-2">{formatIDR(c.menuItem.price)} ea.</span>
+                      <span className="text-sm font-normal text-ink">{c.menuItem.name}</span>
+                      <span className="text-xs text-ink-3 ml-2 num">{formatIDR(c.menuItem.price)} ea.</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button onClick={() => removeFromCart(c.menuItem.id)} className="w-6 h-6 rounded-lg bg-outline/50 text-text-muted hover:text-danger flex items-center justify-center text-sm font-bold transition-colors">−</button>
-                      <span className="text-sm font-bold text-text-main w-4 text-center">{c.quantity}</span>
-                      <button onClick={() => addToCart(c.menuItem)} className="w-6 h-6 rounded-lg bg-outline/50 text-text-muted hover:text-primary flex items-center justify-center text-sm font-bold transition-colors">+</button>
+                      <button onClick={() => removeFromCart(c.menuItem.id)} className="w-7 h-7 rounded bg-line text-ink-2 hover:text-ink flex items-center justify-center text-sm font-medium transition-colors">−</button>
+                      <span className="text-sm font-semibold text-ink w-5 text-center num">{c.quantity}</span>
+                      <button onClick={() => addToCart(c.menuItem)} className="w-7 h-7 rounded bg-line text-ink-2 hover:text-ink flex items-center justify-center text-sm font-medium transition-colors">+</button>
                     </div>
                   </div>
                 ))}
-                <div className="flex justify-between pt-2 border-t border-outline">
-                  <span className="text-sm font-bold text-text-muted">Total</span>
-                  <span className="text-sm font-bold text-primary">{formatIDR(cartTotal)}</span>
+                <div className="flex justify-between pt-2 border-t border-line">
+                  <span className="text-sm font-medium text-ink-2">Total</span>
+                  <span className="text-sm font-semibold text-ink num">{formatIDR(cartTotal)}</span>
                 </div>
               </div>
             </div>
@@ -355,21 +342,21 @@ export default function OrdersPage() {
 
           {/* Menu items */}
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">Menu</p>
+            <p className="text-xs font-medium text-ink-3 mb-2">Menu</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-64 overflow-y-auto pr-1">
               {menuItems.map(item => (
                 <button
                   key={item.id}
                   onClick={() => addToCart(item)}
-                  className="flex items-center justify-between rounded-xl border border-outline bg-surface px-3 py-2.5 text-left hover:border-primary/50 hover:bg-primary/5 transition-colors group"
+                  className="flex items-center justify-between rounded border border-line bg-surface px-3 py-2.5 text-left hover:border-brand-ink/60 hover:bg-raised transition-colors group"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-text-main truncate">{item.name}</p>
-                    <p className="text-xs text-text-muted capitalize">{item.category ?? 'Other'}</p>
+                    <p className="text-sm font-normal text-ink truncate">{item.name}</p>
+                    <p className="text-xs text-ink-2 capitalize">{item.category ?? 'Other'}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-sm font-bold text-primary">{formatIDR(item.price)}</span>
-                    <Icon name="ri-add-circle-line" className="text-primary opacity-0 group-hover:opacity-100 transition-opacity text-lg" />
+                    <span className="text-sm font-semibold text-ink num">{formatIDR(item.price)}</span>
+                    <Icon name="ri-add-circle-line" className="text-brand-ink opacity-0 group-hover:opacity-100 transition-opacity text-lg" />
                   </div>
                 </button>
               ))}
@@ -388,22 +375,22 @@ export default function OrdersPage() {
         {detailOrder && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <Badge variant={statusVariant(detailOrder.status)}>{detailOrder.status.charAt(0).toUpperCase() + detailOrder.status.slice(1)}</Badge>
-              <span className="text-lg font-bold text-primary">{detailOrder.total_price != null ? formatIDR(detailOrder.total_price) : '—'}</span>
+              <StatusPill map={orderStatus} status={detailOrder.status} />
+              <span className="text-lg font-semibold text-ink num">{detailOrder.total_price != null ? formatIDR(detailOrder.total_price) : '—'}</span>
             </div>
             {detailOrder.notes && (
-              <div className="rounded-xl bg-surface-variant p-3">
-                <p className="text-xs font-bold text-text-muted mb-1">Notes</p>
-                <p className="text-sm text-text-main">{detailOrder.notes}</p>
+              <div className="rounded-xl bg-raised p-3">
+                <p className="text-xs font-medium text-ink-2 mb-1">Notes</p>
+                <p className="text-sm text-ink">{detailOrder.notes}</p>
               </div>
             )}
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-2">Items</p>
+              <p className="text-xs font-medium text-ink-3 mb-2">Items</p>
               <div className="space-y-1.5">
                 {(detailOrder.order_items ?? []).map(item => (
-                  <div key={item.id} className="flex justify-between rounded-xl bg-surface-variant px-3 py-2">
-                    <span className="text-sm text-text-main">{item.quantity}× {item.menu_item?.name ?? item.menu_item_id.slice(0, 8)}</span>
-                    <span className="text-sm font-bold text-text-main">{formatIDR(item.price_at_purchase * item.quantity)}</span>
+                  <div key={item.id} className="flex justify-between rounded-xl bg-raised px-3 py-2">
+                    <span className="text-sm text-ink">{item.quantity}× {item.menu_item?.name ?? item.menu_item_id.slice(0, 8)}</span>
+                    <span className="text-sm font-semibold text-ink num">{formatIDR(item.price_at_purchase * item.quantity)}</span>
                   </div>
                 ))}
               </div>

@@ -31,7 +31,7 @@ export default function EmployeeTable({
       sortable: true,
       render: (emp) =>
         emp.profile?.name ?? <span className="text-text-muted">—</span>,
-      className: "font-medium whitespace-nowrap text-text-main",
+      className: "font-normal whitespace-nowrap text-text-main",
     },
     {
       key: "role",
@@ -39,7 +39,7 @@ export default function EmployeeTable({
       sortable: true,
       className: "whitespace-nowrap",
       render: (emp) => (
-        <Badge variant={roleVariant[emp.role] ?? "primary"}>{emp.role}</Badge>
+        <Badge variant={roleVariant[emp.role] ?? "neutral"}>{emp.role}</Badge>
       ),
     },
     {
@@ -78,7 +78,7 @@ export default function EmployeeTable({
         <Button
           variant="ghost"
           onClick={() => onDelete(emp)}
-          className="text-danger hover:text-danger text-[11px] px-2 py-1"
+          className="text-danger hover:text-danger text-xs px-2 py-1"
         >
           Remove
         </Button>

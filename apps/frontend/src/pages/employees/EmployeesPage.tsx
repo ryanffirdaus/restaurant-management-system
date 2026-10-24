@@ -48,7 +48,7 @@ function EmployeesPage() {
       <div className="p-container-margin space-y-gutter">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-text-main tracking-tight">
+            <h1 className="text-2xl font-medium text-text-main tracking-tight">
               Employees
             </h1>
           </div>

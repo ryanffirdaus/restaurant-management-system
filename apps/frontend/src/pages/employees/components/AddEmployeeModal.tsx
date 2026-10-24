@@ -22,8 +22,8 @@ export default function AddEmployeeModal({
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative card-bg rounded-2xl border border-outline shadow-lg p-6 w-full max-w-md mx-4">
-        <h2 className="text-lg font-bold text-text-main mb-4">Add Employee</h2>
+      <div className="relative bg-surface rounded-xl border border-line p-6 w-full max-w-md mx-4">
+        <h2 className="text-lg font-medium text-text-main mb-4">Add Employee</h2>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <TextInput
             label="Name"

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { apiGet, apiPost, formatIDR } from '../../lib/api'
 import Icon from '../../components/Icon'
 import Modal from '../../components/Modal'
+import MetricCard from '../../components/MetricCard'
 import { Button, Select } from '../../components/ui'
 import Table from '../../components/Table'
 import type { Column } from '../../components/Table'
@@ -132,7 +133,7 @@ export default function PaymentsPage() {
     {
       key: 'paid_at', label: 'Date & Time',
       render: p => (
-        <span className="text-sm text-text-main whitespace-nowrap">
+        <span className="text-sm text-ink whitespace-nowrap">
           {new Date(p.paid_at).toLocaleDateString()} {new Date(p.paid_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
       ),
@@ -140,26 +141,26 @@ export default function PaymentsPage() {
     {
       key: 'order_id', label: 'Order',
       render: p => (
-        <span className="font-mono text-xs text-text-muted">{p.order_id.slice(0, 8).toUpperCase()}</span>
+        <span className="font-mono text-xs text-ink-2">{p.order_id.slice(0, 8).toUpperCase()}</span>
       ),
     },
     {
       key: 'method', label: 'Method',
       render: p => (
-        <span className="flex items-center gap-1.5 text-sm text-text-main">
-          <Icon name={METHOD_ICON[p.method] ?? 'ri-money-dollar-circle-line'} className="text-base text-text-muted" />
+        <span className="flex items-center gap-1.5 text-sm text-ink">
+          <Icon name={METHOD_ICON[p.method] ?? 'ri-money-dollar-circle-line'} className="text-base text-ink-2" />
           {methodLabel(p.method)}
         </span>
       ),
     },
     {
       key: 'reference_id', label: 'Reference',
-      render: p => <span className="text-sm text-text-muted">{p.reference_id ?? '—'}</span>,
+      render: p => <span className="text-sm text-ink-2">{p.reference_id ?? '—'}</span>,
     },
     {
       key: 'amount', label: 'Amount',
       headerClassName: 'text-right',
-      className: 'text-right font-bold text-sm text-primary tabular-nums whitespace-nowrap',
+      className: 'text-right font-semibold text-sm text-ink num whitespace-nowrap',
       render: p => <span>{formatIDR(Number(p.amount))}</span>,
     },
   ]
@@ -168,43 +169,35 @@ export default function PaymentsPage() {
     <div className="mt-16 p-container-margin space-y-gutter">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-text-main">Payments</h1>
-        <p className="text-sm text-text-muted mt-0.5">{payments.length} transactions recorded</p>
+        <h1 className="text-2xl font-semibold text-ink">Payments</h1>
+        <p className="text-sm text-ink-2 mt-0.5">{payments.length} transactions recorded</p>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-gutter">
         {[
-          { label: "Today's Revenue", value: formatIDR(todayRevenue), icon: 'ri-calendar-event-line', cls: 'text-primary bg-primary/10' },
-          { label: 'Total Revenue', value: formatIDR(totalRevenue), icon: 'ri-money-dollar-circle-line', cls: 'text-blue-400 bg-blue-500/10' },
-          { label: 'Transactions', value: String(payments.length), icon: 'ri-bill-line', cls: 'text-orange-400 bg-orange-500/10' },
-          { label: 'Unpaid Orders', value: String(unpaidOrders.length), icon: 'ri-timer-line', cls: 'text-danger bg-danger/10' },
+          { label: "Today's Revenue", value: formatIDR(todayRevenue), icon: 'ri-calendar-event-line', tone: 'neutral' as const },
+          { label: 'Total Revenue', value: formatIDR(totalRevenue), icon: 'ri-money-dollar-circle-line', tone: 'neutral' as const },
+          { label: 'Transactions', value: String(payments.length), icon: 'ri-bill-line', tone: 'pending' as const },
+          { label: 'Unpaid Orders', value: String(unpaidOrders.length), icon: 'ri-timer-line', tone: 'danger' as const },
         ].map(k => (
-          <div key={k.label} className="card-bg rounded-2xl border border-outline p-5 flex flex-col gap-3">
-            <div className={`w-9 h-9 rounded-xl ${k.cls} flex items-center justify-center`}>
-              <Icon name={k.icon} />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-text-muted mb-1">{k.label}</p>
-              <p className="text-2xl font-bold text-text-main">{loading ? '...' : k.value}</p>
-            </div>
-          </div>
+          <MetricCard key={k.label} title={k.label} value={loading ? '...' : k.value} icon={k.icon} tone={k.tone} />
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
         {/* Unpaid orders */}
-        <div className="card-bg rounded-2xl border border-outline shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-outline bg-surface/50">
-            <h3 className="font-bold text-text-main">Unpaid Orders</h3>
-            <p className="text-xs text-text-muted mt-0.5">Click to process payment</p>
+        <div className="bg-surface rounded-xl border border-line overflow-hidden">
+          <div className="p-5 border-b border-line">
+            <h3 className="font-semibold text-ink">Unpaid Orders</h3>
+            <p className="text-xs text-ink-2 mt-0.5">Click to process payment</p>
           </div>
-          <div className="divide-y divide-outline max-h-96 overflow-y-auto custom-scrollbar">
+          <div className="divide-y divide-line max-h-96 overflow-y-auto custom-scrollbar">
             {loading ? (
-              <div className="p-8 text-center text-text-muted text-sm">Loading...</div>
+              <div className="p-8 text-center text-ink-2 text-sm">Loading...</div>
             ) : unpaidOrders.length === 0 ? (
-              <div className="p-8 text-center text-text-muted text-sm flex flex-col items-center gap-2">
-                <Icon name="ri-checkbox-circle-line" className="text-3xl text-primary opacity-60" />
+              <div className="p-8 text-center text-ink-2 text-sm flex flex-col items-center gap-2">
+                <Icon name="ri-checkbox-circle-line" className="text-3xl text-ready" />
                 All orders are paid
               </div>
             ) : unpaidOrders.map(o => {
@@ -214,17 +207,17 @@ export default function PaymentsPage() {
                 <button
                   key={o.id}
                   onClick={() => { setPayModal(o); setMethod('cash') }}
-                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-surface-variant/50 transition-colors text-left group"
+                  className="w-full flex items-center justify-between px-5 py-3.5 hover:bg-raised transition-colors text-left group"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-text-main">{getTableLabel(o.table_id)}</p>
-                    <p className="text-xs text-text-muted truncate max-w-[160px]">{preview || 'No items'}</p>
+                    <p className="text-sm font-medium text-ink">{getTableLabel(o.table_id)}</p>
+                    <p className="text-xs text-ink-2 truncate max-w-[160px]">{preview || 'No items'}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-2">
-                    <span className="text-sm font-bold text-text-main tabular-nums">
+                    <span className="text-sm font-semibold text-ink num">
                       {o.total_price != null ? formatIDR(o.total_price) : '—'}
                     </span>
-                    <Icon name="ri-arrow-right-s-line" className="text-xs text-text-muted group-hover:text-primary transition-colors" />
+                    <Icon name="ri-arrow-right-s-line" className="text-base text-ink-3 group-hover:text-ink transition-colors" />
                   </div>
                 </button>
               )
@@ -233,12 +226,12 @@ export default function PaymentsPage() {
         </div>
 
         {/* By method breakdown */}
-        <div className="card-bg rounded-2xl border border-outline shadow-sm p-5 flex flex-col gap-4">
-          <h3 className="font-bold text-text-main">By Method</h3>
+        <div className="bg-surface rounded-xl border border-line p-5 flex flex-col gap-4">
+          <h3 className="font-semibold text-ink">By Method</h3>
           {loading ? (
-            <p className="text-sm text-text-muted">Loading...</p>
+            <p className="text-sm text-ink-2">Loading...</p>
           ) : byMethod.length === 0 ? (
-            <p className="text-sm text-text-muted">No payments yet</p>
+            <p className="text-sm text-ink-2">No payments yet</p>
           ) : (
             <div className="space-y-3">
               {byMethod.map(m => {
@@ -246,16 +239,16 @@ export default function PaymentsPage() {
                 return (
                   <div key={m.value}>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="flex items-center gap-1.5 font-medium text-text-main">
-                        <Icon name={METHOD_ICON[m.value] ?? 'ri-money-dollar-circle-line'} className="text-base text-text-muted" />
+                      <span className="flex items-center gap-1.5 font-normal text-ink">
+                        <Icon name={METHOD_ICON[m.value] ?? 'ri-money-dollar-circle-line'} className="text-base text-ink-2" />
                         {m.label}
                       </span>
-                      <span className="font-bold text-text-main tabular-nums">{formatIDR(m.total)}</span>
+                      <span className="font-semibold text-ink num">{formatIDR(m.total)}</span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-surface-variant overflow-hidden">
-                      <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                    <div className="h-1.5 rounded-full bg-raised overflow-hidden">
+                      <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <p className="text-[10px] text-text-muted mt-0.5">{m.count} transaction{m.count !== 1 ? 's' : ''} • {pct.toFixed(1)}%</p>
+                    <p className="text-xs text-ink-3 mt-1 num">{m.count} transaction{m.count !== 1 ? 's' : ''} • {pct.toFixed(1)}%</p>
                   </div>
                 )
               })}
@@ -264,22 +257,22 @@ export default function PaymentsPage() {
         </div>
 
         {/* Placeholder for chart */}
-        <div className="card-bg rounded-2xl border border-outline shadow-sm p-5 flex flex-col gap-3">
-          <h3 className="font-bold text-text-main">Avg. Order Value</h3>
+        <div className="bg-surface rounded-xl border border-line p-5 flex flex-col gap-3">
+          <h3 className="font-semibold text-ink">Avg. Order Value</h3>
           <div className="flex-1 flex flex-col justify-center gap-2">
-            <p className="text-4xl font-bold text-primary tabular-nums">
+            <p className="text-4xl font-semibold text-ink num">
               {loading || payments.length === 0 ? '—' : formatIDR(totalRevenue / payments.length)}
             </p>
-            <p className="text-xs text-text-muted">across {payments.length} transactions</p>
-            <div className="h-px bg-outline/50 my-2" />
+            <p className="text-xs text-ink-2">across {payments.length} transactions</p>
+            <div className="h-px bg-line my-2" />
             <div className="space-y-1.5">
               {[
                 { label: 'Highest', value: payments.length > 0 ? Math.max(...payments.map(p => Number(p.amount))) : 0 },
                 { label: 'Lowest', value: payments.length > 0 ? Math.min(...payments.map(p => Number(p.amount))) : 0 },
               ].map(s => (
                 <div key={s.label} className="flex justify-between text-sm">
-                  <span className="text-text-muted">{s.label} transaction</span>
-                  <span className="font-bold text-text-main tabular-nums">{formatIDR(s.value)}</span>
+                  <span className="text-ink-2">{s.label} transaction</span>
+                  <span className="font-semibold text-ink num">{formatIDR(s.value)}</span>
                 </div>
               ))}
             </div>
@@ -288,9 +281,9 @@ export default function PaymentsPage() {
       </div>
 
       {/* All transactions table */}
-      <div className="card-bg rounded-2xl border border-outline shadow-sm overflow-hidden">
-        <div className="p-5 border-b border-outline bg-surface/50">
-          <h3 className="font-bold text-text-main">All Transactions</h3>
+      <div className="bg-surface rounded-xl border border-line overflow-hidden">
+        <div className="p-5 border-b border-line">
+          <h3 className="font-semibold text-ink">All Transactions</h3>
         </div>
         <div className="overflow-x-auto">
           <Table columns={columns} data={payments} loading={loading} emptyText="No transactions yet." />
@@ -315,15 +308,15 @@ export default function PaymentsPage() {
         {payModal && (
           <div className="space-y-5">
             {/* Order summary */}
-            <div className="rounded-xl bg-surface-variant p-4 space-y-1.5">
+            <div className="rounded-xl bg-raised p-4 space-y-1.5">
               {(payModal.order_items ?? []).map((item, i) => (
                 <div key={i} className="flex justify-between text-sm">
-                  <span className="text-text-muted">{item.quantity}× {item.menu_item?.name ?? '?'}</span>
+                  <span className="text-ink-2">{item.quantity}× {item.menu_item?.name ?? '?'}</span>
                 </div>
               ))}
-              <div className="pt-2 border-t border-outline flex justify-between font-bold text-sm">
-                <span className="text-text-main">Total</span>
-                <span className="text-primary tabular-nums">{formatIDR(payModal.total_price ?? 0)}</span>
+              <div className="pt-2 border-t border-line flex justify-between font-medium text-sm">
+                <span className="text-ink">Total</span>
+                <span className="text-ink font-semibold num">{formatIDR(payModal.total_price ?? 0)}</span>
               </div>
             </div>
 

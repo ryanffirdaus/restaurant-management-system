@@ -7,7 +7,6 @@ import Table from "../components/Table";
 import Badge from "../components/Badge";
 import Card from "../components/Card";
 import Icon from "../components/Icon";
-import SearchInput from "../components/SearchInput";
 import Modal from "../components/Modal";
 import {
   Button,
@@ -68,88 +67,65 @@ const availabilityOptions = [
   { value: "unavailable", label: "Unavailable" },
 ];
 
-const CATEGORY_COLOR: Record<
-  string,
-  { bg: string; text: string; border: string }
-> = {
+// Categories are not statuses: keep chips neutral and tell them apart by icon,
+// so status colours stay meaningful.
+const CATEGORY_ICON: Record<string, string> = {
   // short keys (from select options)
-  main: {
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-400",
-    border: "border-emerald-500/20",
-  },
-  appetizer: {
-    bg: "bg-amber-500/10",
-    text: "text-amber-400",
-    border: "border-amber-500/20",
-  },
-  drinks: {
-    bg: "bg-sky-500/10",
-    text: "text-sky-400",
-    border: "border-sky-500/20",
-  },
-  dessert: {
-    bg: "bg-pink-500/10",
-    text: "text-pink-400",
-    border: "border-pink-500/20",
-  },
-  snacks: {
-    bg: "bg-orange-500/10",
-    text: "text-orange-400",
-    border: "border-orange-500/20",
-  },
-  other: {
-    bg: "bg-surface-variant",
-    text: "text-text-muted",
-    border: "border-outline",
-  },
+  main: "ri-restaurant-2-line",
+  appetizer: "ri-bowl-line",
+  drinks: "ri-cup-line",
+  dessert: "ri-cake-3-line",
+  snacks: "ri-cookie-line",
+  other: "ri-price-tag-3-line",
   // full names (from seeder)
-  "Main Courses": {
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-400",
-    border: "border-emerald-500/20",
-  },
-  Appetizers: {
-    bg: "bg-amber-500/10",
-    text: "text-amber-400",
-    border: "border-amber-500/20",
-  },
-  Beverages: {
-    bg: "bg-sky-500/10",
-    text: "text-sky-400",
-    border: "border-sky-500/20",
-  },
-  Desserts: {
-    bg: "bg-pink-500/10",
-    text: "text-pink-400",
-    border: "border-pink-500/20",
-  },
-  Pizza: {
-    bg: "bg-red-500/10",
-    text: "text-red-400",
-    border: "border-red-500/20",
-  },
-  Snacks: {
-    bg: "bg-orange-500/10",
-    text: "text-orange-400",
-    border: "border-orange-500/20",
-  },
+  "Main Courses": "ri-restaurant-2-line",
+  Appetizers: "ri-bowl-line",
+  Beverages: "ri-cup-line",
+  Desserts: "ri-cake-3-line",
+  Pizza: "ri-pie-chart-line",
+  Snacks: "ri-cookie-line",
 };
 
+function getCategoryIcon(category: string | null) {
+  return (category && CATEGORY_ICON[category]) || "ri-restaurant-2-line";
+}
+
 function CategoryPill({ category }: { category: string | null }) {
-  if (!category) return <span className="text-text-muted text-sm">—</span>;
-  const c = CATEGORY_COLOR[category] ?? {
-    bg: "bg-surface-variant",
-    text: "text-text-muted",
-    border: "border-outline",
-  };
+  if (!category) return <span className="text-ink-3 text-sm">—</span>;
   const label = getCategoryLabel(category);
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-bold ${c.bg} ${c.text} ${c.border}`}
-    >
+    <span className="inline-flex items-center gap-1 h-6 px-2 rounded-full border border-line bg-raised text-xs font-medium text-ink-2">
+      <Icon name={getCategoryIcon(category)} className="text-sm text-ink-3" />
       {label}
     </span>
+  );
+}
+
+function MenuImage({
+  item,
+  className = "",
+  iconClass = "text-3xl",
+}: {
+  item: MenuItem;
+  className?: string;
+  iconClass?: string;
+}) {
+  if (item.image_url) {
+    return (
+      <img
+        src={item.image_url}
+        alt={item.name}
+        loading="lazy"
+        className={`aspect-[4/3] object-cover rounded-lg bg-raised ${className}`}
+      />
+    );
+  }
+  return (
+    <div
+      className={`aspect-[4/3] rounded-lg bg-raised flex items-center justify-center ${className}`}
+    >
+      <Icon name={getCategoryIcon(item.category)} className={`${iconClass} text-ink-3`} />
+    </div>
   );
 }
 
@@ -383,27 +359,14 @@ export default function MenuPage() {
       key: "name",
       label: "Item",
       sortable: true,
-      className: "font-medium text-text-main whitespace-nowrap",
+      className: "font-normal text-ink whitespace-nowrap",
       render: (item) => (
         <div className="flex items-center gap-3">
-          {item.image_url ? (
-            <img
-              src={item.image_url}
-              alt={item.name}
-              className="w-9 h-9 rounded-lg object-cover shrink-0 bg-surface-variant"
-            />
-          ) : (
-            <div className="w-9 h-9 rounded-lg bg-surface-variant flex items-center justify-center shrink-0">
-              <Icon
-                name="ri-restaurant-2-line"
-                className="text-base text-text-muted"
-              />
-            </div>
-          )}
+          <MenuImage item={item} className="w-14 shrink-0" iconClass="text-lg" />
           <div>
-            <p className="font-semibold text-text-main text-sm">{item.name}</p>
+            <p className="font-medium text-ink text-sm">{item.name}</p>
             {item.description && (
-              <p className="text-xs text-text-muted truncate max-w-[220px]">
+              <p className="text-xs text-ink-3 truncate max-w-[220px]">
                 {item.description}
               </p>
             )}
@@ -422,7 +385,7 @@ export default function MenuPage() {
       key: "price",
       label: "Price",
       sortable: true,
-      className: "tabular-nums whitespace-nowrap font-semibold text-text-main",
+      className: "num whitespace-nowrap font-semibold text-ink",
       render: (item) => formatPrice(item.price),
     },
     {
@@ -451,25 +414,25 @@ export default function MenuPage() {
           <button
             onClick={() => setInfoModal(item)}
             title="Detail"
-            className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+            className="p-1.5 rounded text-ink-2 hover:text-ink hover:bg-raised transition-colors"
           >
-            <Icon name="ri-information-line" className="text-[18px]" />
+            <Icon name="ri-information-line" className="text-lg" />
           </button>
           {isAdmin && (
             <>
               <button
                 onClick={() => openEdit(item)}
                 title="Edit"
-                className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                className="p-1.5 rounded text-ink-2 hover:text-ink hover:bg-raised transition-colors"
               >
-                <Icon name="ri-pencil-line" className="text-[18px]" />
+                <Icon name="ri-pencil-line" className="text-lg" />
               </button>
               <button
                 onClick={() => handleDelete(item)}
                 title="Hapus"
-                className="p-1.5 rounded-lg text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                className="p-1.5 rounded text-ink-2 hover:text-danger hover:bg-danger/10 transition-colors"
               >
-                <Icon name="ri-delete-bin-6-line" className="text-[18px]" />
+                <Icon name="ri-delete-bin-6-line" className="text-lg" />
               </button>
             </>
           )}
@@ -508,10 +471,10 @@ export default function MenuPage() {
       <div className="p-container-margin space-y-gutter">
         <header className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-text-main tracking-tight">
+            <h1 className="text-2xl font-semibold text-ink tracking-tight">
               Menu
             </h1>
-            <p className="text-sm text-text-muted mt-1">
+            <p className="text-sm text-ink-2 mt-1">
               Manage restaurant menu items
             </p>
           </div>
@@ -549,7 +512,7 @@ export default function MenuPage() {
               placeholder="All Items"
             />
           </div>
-          <span className="text-xs text-text-muted">
+          <span className="text-xs text-ink-3 num">
             {filtered.length} of {items.length}
           </span>
         </div>
@@ -621,13 +584,7 @@ export default function MenuPage() {
       >
         {infoModal && (
           <div className="space-y-3">
-            {infoModal.image_url && (
-              <img
-                src={infoModal.image_url}
-                alt={infoModal.name}
-                className="w-full h-40 object-cover rounded-xl bg-surface-variant mb-4"
-              />
-            )}
+            <MenuImage item={infoModal} className="w-full mb-4" iconClass="text-5xl" />
             <MenuInfoRow
               icon="ri-restaurant-2-line"
               label="Name"
@@ -647,13 +604,13 @@ export default function MenuPage() {
               icon="ri-money-dollar-circle-line"
               label="Price"
               value={
-                <span className="font-semibold text-primary">
+                <span className="num font-semibold text-ink">
                   {formatPrice(infoModal.price)}
                 </span>
               }
             />
             <MenuInfoRow
-              icon="toggle_on"
+              icon="ri-toggle-line"
               label="Status"
               value={
                 <Badge variant={infoModal.available ? "primary" : "neutral"}>
@@ -662,7 +619,7 @@ export default function MenuPage() {
               }
             />
             <MenuInfoRow
-              icon="calendar_today"
+              icon="ri-calendar-line"
               label="Added"
               value={new Date(infoModal.created_at).toLocaleDateString(
                 "id-ID",
@@ -703,9 +660,9 @@ function MenuForm({
         onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
       />
       <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-text-muted">
+        <label className="block text-sm font-normal text-ink-2">
           Description{" "}
-          <span className="text-text-muted text-xs opacity-60">(optional)</span>
+          <span className="text-ink-3 text-xs">(optional)</span>
         </label>
         <Textarea
           placeholder="Short description of the item..."
@@ -727,9 +684,9 @@ function MenuForm({
         onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
       />
       <div>
-        <label className="block text-sm font-medium text-text-muted mb-1.5">
+        <label className="block text-sm font-normal text-ink-2 mb-1.5">
           Category{" "}
-          <span className="text-text-muted text-xs opacity-60">(optional)</span>
+          <span className="text-ink-3 text-xs">(optional)</span>
         </label>
         <Select
           value={form.category}
@@ -746,12 +703,12 @@ function MenuForm({
         value={form.image_url}
         onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
       />
-      <div className="flex items-center justify-between py-3 px-4 bg-surface-variant/40 rounded-xl border border-outline">
+      <div className="flex items-center justify-between py-3 px-4 bg-raised rounded-xl border border-line">
         <div>
-          <p className="text-sm font-medium text-text-main">
+          <p className="text-sm font-medium text-ink">
             Available on Menu
           </p>
-          <p className="text-xs text-text-muted mt-0.5">
+          <p className="text-xs text-ink-3 mt-0.5">
             {form.available
               ? "Visible and orderable by customers"
               : "Hidden from menu"}
@@ -765,7 +722,7 @@ function MenuForm({
         />
       </div>
       {error && (
-        <div className="flex items-center gap-2 text-danger text-sm bg-danger/10 border border-danger/20 rounded-xl px-4 py-3">
+        <div className="flex items-center gap-2 text-danger text-sm bg-danger/10 border border-danger/40 rounded-xl px-4 py-3">
           <Icon name="ri-error-warning-line" className="text-base shrink-0" />
           {error}
         </div>
@@ -784,11 +741,11 @@ function MenuInfoRow({
   value: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start gap-3 py-3 px-4 bg-surface-variant/30 rounded-xl border border-outline">
-      <Icon name={icon} className="text-lg text-text-muted shrink-0 mt-0.5" />
+    <div className="flex items-start gap-3 py-3 px-4 bg-raised rounded-xl border border-line">
+      <Icon name={icon} className="text-lg text-ink-3 shrink-0 mt-0.5" />
       <div className="flex-1 min-w-0">
-        <p className="text-xs text-text-muted mb-0.5">{label}</p>
-        <div className="text-sm font-medium text-text-main">{value}</div>
+        <p className="text-xs text-ink-3 mb-0.5">{label}</p>
+        <div className="text-sm font-normal text-ink">{value}</div>
       </div>
     </div>
   );

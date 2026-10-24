@@ -17,9 +17,10 @@ export const roleFilterOptions = [
   ...roleOptions,
 ]
 
-export const roleVariant: Record<string, 'primary' | 'warning' | 'danger' | 'info'> = {
-  admin: 'danger',
-  kitchen: 'info',
-  cashier: 'primary',
-  waiter: 'warning',
+// Roles are identity, not status — keep them neutral so status colors stay meaningful.
+export const roleVariant: Record<string, 'neutral'> = {
+  admin: 'neutral',
+  kitchen: 'neutral',
+  cashier: 'neutral',
+  waiter: 'neutral',
 }
