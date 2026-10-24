@@ -8,8 +8,8 @@ interface ValidationMessageProps {
 const stateStyles: Record<string, { icon: string; textClass: string; bgClass: string }> = {
   valid: {
     icon: 'ri-checkbox-circle-line',
-    textClass: 'text-primary',
-    bgClass: 'bg-primary/20',
+    textClass: 'text-ready',
+    bgClass: 'bg-ready/10',
   },
   error: {
     icon: 'ri-error-warning-line',
@@ -18,8 +18,8 @@ const stateStyles: Record<string, { icon: string; textClass: string; bgClass: st
   },
   warning: {
     icon: 'ri-alert-line',
-    textClass: 'text-warning/80',
-    bgClass: 'bg-warning/20',
+    textClass: 'text-progress',
+    bgClass: 'bg-progress/10',
   },
 }
 
@@ -28,7 +28,7 @@ export default function ValidationMessage({ state, message }: ValidationMessageP
 
   return (
     <p className={`text-xs ${s.textClass} flex items-center gap-1 mt-1`}>
-      <span className={`w-4 h-4 ${s.bgClass} rounded-full flex items-center justify-center text-[10px]`}>
+      <span className={`w-4 h-4 ${s.bgClass} rounded-full flex items-center justify-center text-xs`}>
         <Icon name={s.icon} className="text-xs" filled />
       </span>
       {message}

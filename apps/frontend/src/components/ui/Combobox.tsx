@@ -76,21 +76,21 @@ export default function Combobox({
   return (
     <div className="space-y-1.5" ref={ref}>
       {label && (
-        <label className="block text-sm font-medium text-text-muted">{label}</label>
+        <label className="block text-sm font-normal text-text-muted">{label}</label>
       )}
       <div className="relative">
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className={`w-full bg-background border-2 flex justify-between items-center text-text-main transition-all ${
+          className={`w-full bg-raised border flex justify-between items-center text-text-main transition-all ${
             open
-              ? 'border-primary rounded-t-xl'
-              : 'border-outline hover:border-primary/50 rounded-xl'
-          } px-4 py-3`}
+              ? 'border-brand-ink rounded-t'
+              : 'border-line-strong hover:border-brand-ink/50 rounded'
+          } px-4 h-11`}
         >
           <span className="flex items-center gap-1.5 min-w-0 flex-1">
             {selectedOptions.length > 0 && (
-              <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
+              <span className="w-2 h-2 rounded-full bg-brand shrink-0" />
             )}
             {triggerLabel()}
           </span>
@@ -100,14 +100,14 @@ export default function Combobox({
           />
         </button>
         {open && (
-          <div className="absolute z-20 w-full bg-surface border-x-2 border-b-2 border-primary rounded-b-xl shadow-lg shadow-primary/5 overflow-hidden">
-            <div className="p-2 border-b border-outline">
+          <div className="absolute z-20 w-full bg-surface shadow-pop border-x border-b border-brand-ink rounded-b overflow-hidden">
+            <div className="p-2 border-b border-line-strong">
               <input
                 ref={searchRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full bg-background border border-outline rounded-lg px-3 py-1.5 text-sm text-text-main placeholder:text-text-muted/40 focus:border-primary/50 focus:ring-0 outline-none"
+                className="w-full bg-raised border border-line-strong rounded px-3 py-1.5 text-sm text-text-main placeholder:text-ink-3 focus:border-brand-ink focus:ring-0 outline-none"
               />
             </div>
             <div className="max-h-60 overflow-y-auto">
@@ -122,13 +122,13 @@ export default function Combobox({
                       onClick={() => toggle(opt)}
                       className={`px-4 py-2.5 text-sm cursor-pointer transition-colors flex items-center gap-3 ${
                         checked
-                          ? 'bg-primary/10 text-primary font-medium'
+                          ? 'bg-brand/10 text-brand-ink font-normal'
                           : 'text-text-main hover:bg-surface-variant'
                       }`}
                     >
-                      <span className="w-4 h-4 rounded border-2 flex items-center justify-center transition-all shrink-0 bg-background border-outline">
+                      <span className="w-4 h-4 rounded border flex items-center justify-center transition-all shrink-0 bg-raised border-line-strong">
                         {checked && (
-                          <Icon name="ri-check-line" className="text-[10px] text-primary" filled />
+                          <Icon name="ri-check-line" className="text-xs text-brand-ink" filled />
                         )}
                       </span>
                       <span>{opt.label}</span>

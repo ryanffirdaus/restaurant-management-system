@@ -70,20 +70,20 @@ export default function Select({
 
   const borderColor = validation
     ? validation === 'valid'
-      ? 'border-primary/50'
+      ? 'border-ready/60'
       : validation === 'error'
         ? 'border-danger/50'
-        : 'border-warning/40'
+        : 'border-progress/60'
     : open
-      ? 'border-primary'
-      : 'border-outline hover:border-primary/50'
+      ? 'border-brand-ink'
+      : 'border-line-strong hover:border-brand-ink/50'
 
-  const rounded = open ? 'rounded-t-xl' : 'rounded-xl'
+  const rounded = open ? 'rounded-t' : 'rounded-xl'
 
   return (
     <div className="space-y-1.5" ref={ref}>
       {label && (
-        <label className="block text-sm font-medium text-text-muted">
+        <label className="block text-sm font-normal text-text-muted">
           {label}
           {hint && <span className="text-text-muted ml-1 text-xs opacity-60">({hint})</span>}
         </label>
@@ -93,7 +93,7 @@ export default function Select({
           type="button"
           onClick={() => !disabled && setOpen(!open)}
           disabled={disabled}
-          className={`w-full bg-background border-2 ${borderColor} ${rounded} px-4 py-3 flex justify-between items-center text-text-main transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+          className={`w-full bg-raised border ${borderColor} ${rounded} px-4 h-11 flex justify-between items-center text-text-main transition-all ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <span className={selected ? 'text-text-main truncate' : 'text-text-muted/40 truncate'}>
             {selected ? selected.label : placeholder}
@@ -104,14 +104,14 @@ export default function Select({
           />
         </button>
         {open && (
-          <div className="absolute z-20 w-full bg-surface border-x-2 border-b-2 border-primary rounded-b-xl shadow-lg shadow-primary/5 overflow-hidden">
-            <div className="p-2 border-b border-outline">
+          <div className="absolute z-20 w-full bg-surface shadow-pop border-x border-b border-brand-ink rounded-b overflow-hidden">
+            <div className="p-2 border-b border-line-strong">
               <input
                 ref={searchRef}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={searchPlaceholder}
-                className="w-full bg-background border border-outline rounded-lg px-3 py-1.5 text-sm text-text-main placeholder:text-text-muted/40 focus:border-primary/50 focus:ring-0 outline-none"
+                className="w-full bg-raised border border-line-strong rounded px-3 py-1.5 text-sm text-text-main placeholder:text-ink-3 focus:border-brand-ink focus:ring-0 outline-none"
               />
             </div>
             <div className="max-h-60 overflow-y-auto">
@@ -123,7 +123,7 @@ export default function Select({
                     key={opt.value}
                     onClick={() => handleSelect(opt)}
                     className={`px-4 py-2.5 text-sm cursor-pointer transition-colors text-text-main hover:bg-surface-variant ${
-                      selected?.value === opt.value ? 'bg-primary/10 font-medium' : ''
+                      selected?.value === opt.value ? 'bg-brand/10 font-normal' : ''
                     }`}
                   >
                     {opt.label}

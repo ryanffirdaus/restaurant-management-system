@@ -24,7 +24,7 @@ export default function SearchBar({
   return (
     <div className="space-y-1.5">
       {label && (
-        <label className="block text-sm font-medium text-text-muted">
+        <label className="block text-sm font-normal text-text-muted">
           {label}
           {hint && (
             <span className="text-text-muted ml-1 text-xs opacity-60">
@@ -39,7 +39,7 @@ export default function SearchBar({
           className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none"
         />
         <input
-          className={`w-full bg-background border border-outline rounded-xl pl-10 pr-4 py-3 text-text-main placeholder:text-text-muted/40 focus:border-primary/50 focus:ring-0 transition-all ${
+          className={`w-full bg-raised border border-line-strong rounded pl-10 pr-4 h-11 text-text-main placeholder:text-ink-3 focus:border-brand-ink focus:ring-0 transition-all ${
             disabled
               ? "opacity-50 cursor-not-allowed bg-surface-variant/50"
               : ""

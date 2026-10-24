@@ -11,15 +11,15 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const validationBorders: Record<ValidationState, string> = {
-  valid: 'border-primary/50',
+  valid: 'border-ready/60',
   error: 'border-danger/50',
-  warning: 'border-warning/40',
+  warning: 'border-progress/60',
 }
 
 const validationFocus: Record<ValidationState, string> = {
-  valid: 'focus:border-primary/50',
+  valid: 'focus:border-brand-ink',
   error: 'focus:border-danger/50',
-  warning: 'focus:border-warning/40',
+  warning: 'focus:border-progress/60',
 }
 
 export default function TextInput({
@@ -33,21 +33,21 @@ export default function TextInput({
 }: TextInputProps) {
   const borderStyle = validation
     ? validationBorders[validation]
-    : 'border-outline focus:border-primary/50'
+    : 'border-line-strong focus:border-brand-ink'
   const focusStyle = validation
     ? validationFocus[validation]
-    : 'focus:border-primary/50'
+    : 'focus:border-brand-ink'
 
   return (
     <div className="space-y-1.5">
       {label && (
-        <label className="block text-sm font-medium text-text-muted">
+        <label className="block text-sm font-normal text-text-muted">
           {label}
           {hint && <span className="text-text-muted ml-1 text-xs opacity-60">({hint})</span>}
         </label>
       )}
       <input
-        className={`w-full bg-background border ${borderStyle} rounded-xl px-4 py-3 text-text-main placeholder:text-text-muted/40 ${focusStyle} focus:ring-0 transition-all ${
+        className={`w-full bg-raised border ${borderStyle} rounded px-4 h-11 text-text-main placeholder:text-ink-3 ${focusStyle} focus:ring-0 transition-all ${
           disabled ? 'opacity-50 cursor-not-allowed bg-surface-variant/50' : ''
         } ${className}`}
         disabled={disabled}

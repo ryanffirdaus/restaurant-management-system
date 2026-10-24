@@ -1,28 +1,33 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost'
+type ButtonSize = 'sm' | 'md' | 'lg'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
+  size?: ButtonSize
   children: ReactNode
   icon?: ReactNode
 }
 
+// Saffron is reserved for the one action per screen that moves work forward.
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    'bg-primary text-black font-bold hover:bg-emerald-light shadow-lg shadow-primary/10 hover:shadow-xl hover:shadow-primary/20',
-  secondary:
-    'bg-surface-variant text-text-main font-bold hover:bg-outline hover:shadow-lg hover:shadow-black/10',
-  outline:
-    'border border-primary/50 text-primary font-bold hover:bg-primary/5 hover:shadow-lg hover:shadow-primary/10',
-  danger:
-    'bg-danger/10 border border-danger/20 text-danger font-bold hover:bg-danger/20 hover:shadow-lg hover:shadow-danger/10',
-  ghost:
-    'text-text-muted font-medium hover:text-text-main hover:bg-surface-variant',
+  primary: 'bg-brand text-brand-foreground font-semibold hover:bg-brand-hover',
+  secondary: 'bg-raised text-ink font-medium hover:bg-line',
+  outline: 'border border-line-strong text-ink font-medium hover:bg-raised',
+  danger: 'bg-danger/10 border border-danger/40 text-danger font-medium hover:bg-danger/20',
+  ghost: 'text-ink-2 font-medium hover:text-ink hover:bg-raised',
+}
+
+const sizeClasses: Record<ButtonSize, string> = {
+  sm: 'h-9 px-3 text-sm',
+  md: 'h-11 px-4 text-sm', // 44px — touch minimum
+  lg: 'h-14 px-6 text-base',
 }
 
 export default function Button({
   variant = 'primary',
+  size = 'md',
   children,
   icon,
   className = '',
@@ -31,9 +36,9 @@ export default function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-sm transition-all hover:scale-[1.02] active:scale-[0.98] ${
-        variantClasses[variant]
-      } ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none scale-100 hover:scale-100 active:scale-100' : 'cursor-pointer'} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded transition-colors duration-150 active:translate-y-px ${
+        sizeClasses[size]
+      } ${variantClasses[variant]} ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : 'cursor-pointer'} ${className}`}
       disabled={disabled}
       {...rest}
     >

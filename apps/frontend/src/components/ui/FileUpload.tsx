@@ -45,23 +45,23 @@ export default function FileUpload({
   return (
     <div className="space-y-1.5">
       {label && (
-        <label className="block text-sm font-medium text-text-muted mb-2">{label}</label>
+        <label className="block text-sm font-normal text-text-muted mb-2">{label}</label>
       )}
       <div
         onClick={handleClick}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-background/40 transition-all cursor-pointer ${
+        className={`border border-dashed rounded-2xl p-10 flex flex-col items-center justify-center bg-background/40 transition-all cursor-pointer ${
           dragging
-            ? 'border-primary/40 bg-primary/5'
-            : 'border-outline hover:border-primary/40 hover:bg-primary/5'
+            ? 'border-brand-ink/40 bg-brand/5'
+            : 'border-line-strong hover:border-brand-ink/40 hover:bg-brand/5'
         }`}
       >
-        <div className="w-12 h-12 bg-surface-variant rounded-full flex items-center justify-center text-primary mb-4">
+        <div className="w-12 h-12 bg-surface-variant rounded-full flex items-center justify-center text-brand-ink mb-4">
           <Icon name="ri-add-line" className="text-2xl" />
         </div>
-        <p className="text-sm text-text-main font-medium">Click or drag images here</p>
+        <p className="text-sm text-text-main font-normal">Click or drag images here</p>
         <p className="text-xs text-text-muted mt-1">
           Supports {accept.replace(/\./g, '').toUpperCase()} (Max {maxSizeMB}MB)
         </p>

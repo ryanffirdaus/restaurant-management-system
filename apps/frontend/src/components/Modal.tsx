@@ -25,15 +25,15 @@ export default function Modal({
   return (
     <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        className="fixed inset-0 bg-black/40"
         onClick={onClose}
       />
       <div
-        className={`relative card-bg rounded-2xl border border-outline shadow-2xl w-full ${maxWidth} flex flex-col max-h-[90vh]`}
+        className={`relative bg-surface rounded-3xl border border-line shadow-pop w-full ${maxWidth} flex flex-col max-h-[90vh]`}
       >
         <div className="flex items-start justify-between px-6 pt-6 pb-5 border-b border-outline">
           <div>
-            <h2 className="text-lg font-bold text-text-main">{title}</h2>
+            <h2 className="text-lg font-semibold text-text-main">{title}</h2>
             {subtitle && (
               <p className="text-sm text-text-muted mt-0.5">{subtitle}</p>
             )}
@@ -41,7 +41,7 @@ export default function Modal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 -mr-1 -mt-0.5 rounded-lg text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors"
+            className="p-1.5 -mr-1 -mt-0.5 rounded text-text-muted hover:text-text-main hover:bg-surface-variant transition-colors"
           >
             <Icon name="ri-close-line" className="text-xl" />
           </button>

@@ -9,7 +9,7 @@ export default function Toggle({ label, id, className = '', ...rest }: TogglePro
 
   return (
     <div className="flex flex-col items-center gap-2">
-      {label && <span className="text-xs text-text-muted uppercase font-bold">{label}</span>}
+      {label && <span className="text-xs text-text-muted uppercase font-medium">{label}</span>}
       <label className="relative inline-flex items-center cursor-pointer">
         <input
           type="checkbox"
@@ -20,12 +20,12 @@ export default function Toggle({ label, id, className = '', ...rest }: TogglePro
         <div
           className="
             w-12 h-6 rounded-full transition-all
-            bg-surface-variant border border-outline
-            peer-checked:bg-primary peer-checked:border-primary peer-checked:shadow-[0_0_15px_rgba(16,185,129,0.3)]
+            bg-surface-variant border border-line-strong
+            peer-checked:bg-brand peer-checked:border-brand-ink
             peer-focus:outline-none
             after:content-[''] after:absolute after:top-[2px] after:left-[2px]
             after:bg-text-muted after:rounded-full after:h-5 after:w-5 after:transition-all
-            peer-checked:after:translate-x-6 peer-checked:after:bg-white peer-checked:after:border-white
+            peer-checked:after:translate-x-6 peer-checked:after:bg-brand-foreground peer-checked:after:border-brand-foreground
           "
         />
       </label>

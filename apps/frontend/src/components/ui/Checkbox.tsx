@@ -22,14 +22,14 @@ export default function Checkbox({ label, id, className = '', disabled, ...rest 
         <span
           className="
             w-5 h-5 rounded-md border transition-all flex items-center justify-center
-            border-outline bg-background
-            peer-checked:bg-primary peer-checked:border-primary
-            peer-focus:ring-2 peer-focus:ring-primary/30 peer-focus:ring-offset-1 peer-focus:ring-offset-background
-            group-hover:border-primary/50
+            border-line-strong bg-background
+            peer-checked:bg-brand peer-checked:border-brand-ink
+            peer-focus:ring-2 peer-focus:ring-brand-ink/30 peer-focus:ring-offset-1 peer-focus:ring-offset-background
+            group-hover:border-brand-ink/50
           "
         >
           <svg
-            className="w-3 h-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+            className="w-3 h-3 text-brand-foreground opacity-0 peer-checked:opacity-100 transition-opacity"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

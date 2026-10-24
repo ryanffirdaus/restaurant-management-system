@@ -35,7 +35,7 @@ export default function Table<T>({
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="bg-surface-variant/50 text-text-muted text-[10px] font-bold uppercase tracking-widest border-b border-outline">
+            <tr className="text-ink-3 text-xs font-medium border-b border-outline">
               {columns.map((col) => {
                 const isSorted = sortKey === col.key
                 return (
@@ -53,7 +53,7 @@ export default function Table<T>({
                     <span className="inline-flex items-center gap-1">
                       {col.label}
                       {col.sortable && (
-                        <span className={`text-[10px] leading-none ${isSorted ? 'opacity-100' : 'opacity-30'}`}>
+                        <span className={`text-xs leading-none ${isSorted ? 'opacity-100' : 'opacity-30'}`}>
                           {isSorted ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
                         </span>
                       )}
