@@ -2,33 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Navy & Ice Blue — deep navy chrome, cool neutral page, ice-blue accent.
+   Tokens are RGB triplets consumed by tailwind.config.js (see docs/design-system.md).
+   brand = solid navy primary button; brand-ink = brand used as text/border (link blue);
+   sb-accent = ice blue, only on navy chrome (logo, active nav, live badges). */
 :root {
-  --color-background: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-variant: #f1f5f9;
-  --color-text-main: #1e293b;
-  --color-text-muted: #64748b;
-  --color-outline: #e2e8f0;
-}
-
-.dark {
-  --color-background: #0d1117;
-  --color-surface: #161b22;
-  --color-surface-variant: #21262d;
-  --color-text-main: #f0f6fc;
-  --color-text-muted: #8b949e;
-  --color-outline: #30363d;
+  color-scheme: light;
+  --c-bg: 243 246 250;
+  --c-surface: 255 255 255;
+  --c-raised: 234 239 246;
+  --c-line: 220 227 238;
+  --c-line-strong: 188 199 216;
+  --c-ink: 15 26 46;
+  --c-ink-2: 71 84 107;
+  --c-ink-3: 102 114 138;
+  --c-brand: 31 59 110;
+  --c-brand-hover: 23 46 87;
+  --c-brand-fg: 255 255 255;
+  --c-brand-ink: 31 79 150;
+  --c-pending: 29 111 209;
+  --c-progress: 191 79 23;
+  --c-ready: 11 127 91;
+  --c-reserved: 106 75 214;
+  --c-danger: 196 33 61;
+  --c-sb: 20 32 58;
+  --c-sb-ink: 238 243 251;
+  --c-sb-ink-2: 152 168 196;
+  --c-sb-raised: 31 46 79;
+  --c-sb-line: 34 49 79;
+  --c-sb-accent: 124 196 245;
+  --c-sb-accent-fg: 12 26 46;
 }
 
 @layer base {
   body {
     @apply antialiased;
-    font-family: 'Public Sans', system-ui, sans-serif;
-    background-color: var(--color-background);
+    font-family: 'Geist', 'Inter', system-ui, sans-serif;
+    font-feature-settings: 'tnum' 0;
+    line-height: 1.5;
+    color: rgb(var(--c-ink));
+    background-color: rgb(var(--c-bg));
   }
 
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background: rgb(var(--c-brand));
+    color: rgb(var(--c-brand-fg));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-brand-ink));
+    outline-offset: 2px;
+  }
+
+}
+
+@layer components {
+  /* Small uppercase label — eyebrows, column headers */
+  .label-mono {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 12px;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: rgb(var(--c-ink-3));
+  }
+
+  /* Money, counts, timers — digits line up in columns */
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 8px live dot */
+  .status-pulse {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .status-pulse.is-live {
+    animation: pulse-ring 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+  @keyframes pulse-ring {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent); }
+    100% { box-shadow: 0 0 0 6px transparent; }
+  }
+}
+
+@layer base {
   .custom-scrollbar::-webkit-scrollbar {
-    width: 4px;
+    width: 6px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-track {
@@ -36,16 +104,12 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #30363d;
-    border-radius: 10px;
-  }
-
-  .emerald-glow {
-    filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3));
+    background: rgb(var(--c-line-strong));
+    border-radius: 6px;
   }
 
   .card-bg {
-    background-color: var(--color-surface);
+    background-color: rgb(var(--c-surface));
   }
 
   .no-scrollbar::-webkit-scrollbar {
